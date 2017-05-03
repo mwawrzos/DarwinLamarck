@@ -11,11 +11,11 @@ agent_canvas = VerySimpleCanvas(BaseAgent.draw)
 
 
 def construct_agents(constructor, fst_id, count, space):
-    return [constructor(id,
+    return [constructor(agent_id,
                         space,
                         random.random() * space.x_max,
                         random.random() * space.y_max)
-            for id in range(fst_id, count + fst_id)]
+            for agent_id in range(fst_id, count + fst_id)]
 
 
 def make_agents(x_max, y_max):

@@ -5,7 +5,6 @@
 
 var AgentVisualization = function (width, height, context) {
     this.draw = function (objects) {
-        // for (var i in objects) {
         for (var i = 0; i < objects.length; i++) {
             var p = objects[i];
             this.drawCircle(p.x, p.y, p.r, p.Color)

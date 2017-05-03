@@ -1,8 +1,6 @@
-from math import sqrt
-
-from numpy import random, mean
-
 import numpy as np
+
+from math import sqrt
 
 
 class BaseAgent:
@@ -66,7 +64,7 @@ class SheepAgent(BaseAgent):
         self.heading = norm(self.heading)
 
     def distributed_decision(self):
-        self.decision = random.choice(self.asd)
+        self.decision = np.random.choice(self.asd)
         return decisions[self.decision]
 
 
@@ -88,7 +86,7 @@ def separate(me, neighbours):
 
 
 def match(neighbours):
-    return mean([neighbour.pos for neighbour in neighbours])
+    return np.mean([neighbour.pos for neighbour in neighbours])
 
 
 def flocking(me, neighbours):

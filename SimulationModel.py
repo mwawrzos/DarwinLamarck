@@ -2,8 +2,6 @@ from mesa.datacollection import DataCollector
 from mesa.model import Model
 from mesa.time import SimultaneousActivation
 
-from Boids import BaseAgent
-
 
 class SimulationModel(Model):
     def __init__(self, agents):
