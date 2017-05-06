@@ -8,8 +8,9 @@ from Types import t_matcher
 class BaseAgent:
     vision = 2
 
-    def __init__(self, unique_id, space, x, y, r):
+    def __init__(self, unique_id, space, model, x, y, r):
         super().__init__()
+        self.model = model
         self.r = r
         self.unique_id = unique_id
         self.space = space
@@ -25,8 +26,8 @@ class BaseAgent:
 
 
 class AutonomicAgent(BaseAgent):
-    def __init__(self, unique_id, space, x, y, r, max_speed, heading=None):
-        super().__init__(unique_id, space, x, y, r)
+    def __init__(self, unique_id, space, model, x, y, r, max_speed, heading=None):
+        super().__init__(unique_id, space, model, x, y, r)
         self.max_speed = max_speed
         self.heading = heading if heading else np.random.random(2)
 
@@ -56,8 +57,8 @@ class AutonomicAgent(BaseAgent):
 
 
 class MarkerAgent(BaseAgent):
-    def __init__(self, unique_id, space, x, y):
-        super().__init__(unique_id, space, x, y, r=0.02)
+    def __init__(self, unique_id, space, model, x, y):
+        super().__init__(unique_id, space, model, x, y, r=0.02)
         self.r = 0.02
 
     def draw(self):
@@ -71,8 +72,8 @@ class MarkerAgent(BaseAgent):
 
 
 class GrassAgent(BaseAgent):
-    def __init__(self, unique_id, space, x, y):
-        super().__init__(unique_id, space, x, y, r=0.06)
+    def __init__(self, unique_id, space, model, x, y):
+        super().__init__(unique_id, space, model, x, y, r=0.06)
         self.r = 0.06
 
     def draw(self):
@@ -86,8 +87,8 @@ class GrassAgent(BaseAgent):
 
 
 class WolfAgent(AutonomicAgent):
-    def __init__(self, unique_id, space, x, y, max_speed=0.03, heading=None):
-        super().__init__(unique_id, space, x, y, r=0.14, max_speed=max_speed, heading=heading)
+    def __init__(self, unique_id, space, model, x, y, max_speed=0.03, heading=None):
+        super().__init__(unique_id, space, model, x, y, r=0.14, max_speed=max_speed, heading=heading)
         self.r = 0.14
         self.asd = [i for (i, c) in enumerate([1, 1]) for _ in range(c)]
         self.decisions = [Flock(WolfAgent), Eating(SheepAgent)]
@@ -101,11 +102,25 @@ class WolfAgent(AutonomicAgent):
 
 
 class SheepAgent(AutonomicAgent):
-    def __init__(self, unique_id, space, x, y, max_speed=0.03, heading=None):
-        super().__init__(unique_id, space, x, y, r=0.1, max_speed=max_speed, heading=heading)
+    def __init__(self, unique_id, space, model, x, y, max_speed=0.03, heading=None):
+        super().__init__(unique_id, space, model, x, y, r=0.1, max_speed=max_speed, heading=heading)
         self.asd = [i for (i, c) in enumerate([33, 22, 33]) for _ in range(c)]
+        self.energy = 500
 
         self.decisions = [Flock(SheepAgent), Eating(GrassAgent), escaping]
+
+    def advance(self):
+        super().advance()
+        self.update_energy()
+        if self.energy < 0:
+            self.die()
+
+    def update_energy(self):
+        self.energy -= 1
+
+        neighbors = self.space.get_neighbors(self.pos, self.r * 2)
+        if self.energy < 500 and any(map(t_matcher(GrassAgent), neighbors)):
+            self.energy += 20
 
     def draw(self):
         return {'Color': 'blue', 'rs': BaseAgent.vision}
@@ -113,6 +128,11 @@ class SheepAgent(AutonomicAgent):
     def distributed_decision(self):
         self.decision = np.random.choice(self.asd)
         return self.decisions[self.decision]
+
+    def die(self):
+        # noinspection PyProtectedMember
+        self.space._remove_agent(self.pos, self)
+        self.model.schedule.remove(self)
 
 
 def colliding_decision(agent):
