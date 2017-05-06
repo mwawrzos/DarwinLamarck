@@ -1,6 +1,6 @@
 import numpy as np
 
-from Flocking import Flocking
+from Flock import Flock
 from MathUtlis import neighbours_vectors, norm, sqr_dst
 from Types import t_matcher
 
@@ -85,19 +85,19 @@ class GrassAgent(BaseAgent):
         pass
 
 
-class WolfAgent(BaseAgent):
-    def __init__(self, unique_id, space, x, y):
-        super().__init__(unique_id, space, x, y, r=0.14)
+class WolfAgent(AutonomicAgent):
+    def __init__(self, unique_id, space, x, y, max_speed=0.03, heading=None):
+        super().__init__(unique_id, space, x, y, r=0.14, max_speed=max_speed, heading=heading)
         self.r = 0.14
+        self.asd = [i for (i, c) in enumerate([1, 1]) for _ in range(c)]
+        self.decisions = [Flock(WolfAgent), Eating(SheepAgent)]
 
     def draw(self):
         return {'Color': 'red', 'rs': BaseAgent.vision}
 
-    def step(self):
-        pass
-
-    def advance(self):
-        pass
+    def distributed_decision(self):
+        self.decision = np.random.choice(self.asd)
+        return self.decisions[self.decision]
 
 
 class SheepAgent(AutonomicAgent):
@@ -105,7 +105,7 @@ class SheepAgent(AutonomicAgent):
         super().__init__(unique_id, space, x, y, r=0.1, max_speed=max_speed, heading=heading)
         self.asd = [i for (i, c) in enumerate([33, 22, 33]) for _ in range(c)]
 
-        self.decisions = [Flocking(SheepAgent, 1.5), Eating(GrassAgent), escaping]
+        self.decisions = [Flock(SheepAgent), Eating(GrassAgent), escaping]
 
     def draw(self):
         return {'Color': 'blue', 'rs': BaseAgent.vision}
@@ -135,7 +135,7 @@ class Eating:
     def __call__(self, me, neighbours):
         neighbours = list(filter(t_matcher(self.food_type), neighbours))
         if len(neighbours):
-            return min(neighbours_vectors(me, neighbours),
-                       key=sqr_dst)
+            return -min(neighbours_vectors(me, neighbours),
+                        key=sqr_dst)
         else:
             return np.array([0, 0])
