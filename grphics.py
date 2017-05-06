@@ -18,13 +18,21 @@ class VerySimpleCanvas(VisualizationElement):
     def render(self, model):
         space_state = []
         for obj in model.schedule.agents:
-            portrayal = BaseAgent.draw(obj)
+            space_width = obj.space.x_max - obj.space.x_min
+
+            portrayal = obj.draw()
             x, y, = obj.pos
-            x = ((x - obj.space.x_min) /
-                 (obj.space.x_max - obj.space.x_min))
-            y = ((y - obj.space.y_min) /
-                 obj.space.y_max - obj.space.y_min)
+            x, y = x/space_width, y/space_width
             portrayal['x'] = x
             portrayal['y'] = y
+            if obj.heading is not None and obj.max_speed is not None:
+                vx, vy = obj.pos + obj.heading * obj.max_speed * 10
+                vx, vy = vx/space_width, vy/space_width
+            else:
+                vx, vy = x, y
+            portrayal['vx'] = vx
+            portrayal['vy'] = vy
+            if 'rs' in portrayal:
+                portrayal['rs'] = portrayal['rs'] / space_width
             space_state.append(portrayal)
         return space_state

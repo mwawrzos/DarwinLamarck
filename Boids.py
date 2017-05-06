@@ -1,10 +1,29 @@
+from math import sqrt
+from Types import t_matcher
+
 import numpy as np
 
-from math import sqrt
+
+def vector_from(agent):
+    return lambda neighbour: agent - neighbour
+
+
+def neighbours_vectors(me, neighbours):
+    return map(vector_from(me),
+               map(BaseAgent.pos_vector,
+                   neighbours))
+
+
+def sqr_dst(vec):
+    return vec[0] * vec[0] + vec[1] * vec[1]
+
+
+def v_len(vec):
+    return sqrt(sqr_dst(vec))
 
 
 class BaseAgent:
-    vision = 5
+    vision = 2
 
     def __init__(self, unique_id, space, x, y):
         super().__init__()
@@ -14,9 +33,28 @@ class BaseAgent:
         self.space.place_agent(self, self.pos)
 
         self.decision = -1
+        self.heading = None
+        self.max_speed = None
 
     def draw(self):
-        return self.draw()
+        pass
+
+    def pos_vector(self):
+        return np.array(self.pos)
+
+
+class MarkerAgent(BaseAgent):
+    def __init__(self, unique_id, space, x, y):
+        super().__init__(unique_id, space, x, y)
+
+    def draw(self):
+        return {'Color': 'black', 'r': 1}
+
+    def step(self):
+        pass
+
+    def advance(self):
+        pass
 
 
 class GrassAgent(BaseAgent):
@@ -31,7 +69,7 @@ class GrassAgent(BaseAgent):
 
 
 def norm(new_heading):
-    length = np.linalg.norm(new_heading)
+    length = v_len(new_heading)
     if length:
         new_heading = new_heading / length
     return new_heading
@@ -47,7 +85,7 @@ class SheepAgent(BaseAgent):
         self.new_pos = None
 
     def draw(self):
-        return {'Color': 'blue', 'r': 5}
+        return {'Color': 'blue', 'r': 5, 'rs': BaseAgent.vision}
 
     def step(self):
         self.update_heading(self.space.get_neighbors(self.pos, BaseAgent.vision, False))
@@ -68,40 +106,39 @@ class SheepAgent(BaseAgent):
         return decisions[self.decision]
 
 
-def sqr_dst(vec):
-    return vec[0]*vec[0] + vec[1]*vec[1]
+def cohere(me, neighbours):
+    return -norm(sum(neighbours_vectors(me, neighbours),
+                     np.array([0, 0])))
 
 
-def cohere(neighbours):
-    return norm(sum([np.array(neighbour.pos) for neighbour in neighbours]))
-
-
-def separation_vector(dist_vector):
-    return np.array([0, 0]) if sqrt(sqr_dst(dist_vector)) > 5 else -dist_vector
+def separation_scaling(vector):
+    length = v_len(vector)
+    return vector * (1.5 - length) / length
 
 
 def separate(me, neighbours):
-    return norm(sum([separation_vector(me - np.array(neighbour.pos))
-                     for neighbour in neighbours]))
+    return sum(map(separation_scaling,
+                   filter(lambda v: v_len(v) < 1.5,
+                          neighbours_vectors(me, neighbours))),
+               np.array([0, 0]))
 
 
 def match(neighbours):
-    return np.mean([neighbour.pos for neighbour in neighbours])
+    return np.mean([neighbour.heading for neighbour in neighbours]) if len(neighbours) else np.array([0, 0])
 
 
 def flocking(me, neighbours):
-    neighbours = [neighbour
-                  for neighbour in neighbours
-                  if type(neighbour) is SheepAgent]
-    return cohere(neighbours) + separate(me, neighbours) + match(neighbours)
+    neighbours = list(filter(t_matcher(SheepAgent), neighbours))
+    return cohere(me, neighbours) + separate(me, neighbours) + match(neighbours)
 
 
 def eating(me, neighbours):
-    closest = min([me - np.array(neighbour.pos)
-                   for neighbour in neighbours
-                   if type(neighbour) is GrassAgent],
-                  key=sqr_dst)
-    return -closest
+    neighbours = list(filter(t_matcher(GrassAgent), neighbours))
+    if len(neighbours):
+        return min(neighbours_vectors(me, neighbours),
+                   key=sqr_dst)
+    else:
+        return np.array([0, 0])
 
 
 def escaping(me, neighbours):

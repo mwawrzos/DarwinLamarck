@@ -4,10 +4,10 @@ from mesa.visualization.ModularVisualization import ModularServer
 from HistogramModule import HistogramModule
 from SimulationModel import SimulationModel
 import random
-from Boids import BaseAgent, GrassAgent, SheepAgent
+from Boids import GrassAgent, SheepAgent, MarkerAgent
 from grphics import VerySimpleCanvas
 
-agent_canvas = VerySimpleCanvas(BaseAgent.draw)
+agent_canvas = VerySimpleCanvas(lambda agent: agent.draw())
 
 
 def construct_agents(constructor, fst_id, count, space):
@@ -23,6 +23,9 @@ def make_agents(x_max, y_max):
     agents = []
     agents.extend(construct_agents(GrassAgent, 0, 100, space))
     agents.extend(construct_agents(SheepAgent, 100, 50, space))
+    # agents.extend([MarkerAgent(150 + x + 10*y, space, x, y)
+    #                for x in range(10)
+    #                for y in range(10)])
     return agents
 
 histogram = HistogramModule(list(range(4)), 200, 500)

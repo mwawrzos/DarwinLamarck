@@ -7,11 +7,13 @@ var AgentVisualization = function (width, height, context) {
     this.draw = function (objects) {
         for (var i = 0; i < objects.length; i++) {
             var p = objects[i];
-            this.drawCircle(p.x, p.y, p.r, p.Color)
+            this.drawCircle(p.x, p.y, p.r, p.Color, true);   // agent
+            // this.drawCircle(p.x, p.y, p.rs*width, 'green', false); // sight
+            this.drawVector(p.x, p.y, p.vx, p.vy);           // vector
         }
     };
     
-    this.drawCircle = function (x, y, radius, color) {
+    this.drawCircle = function (x, y, radius, color, fill) {
         var cx = x * width;
         var cy = y * height;
         var r = radius;
@@ -19,10 +21,26 @@ var AgentVisualization = function (width, height, context) {
         context.beginPath();
         context.arc(cx, cy, r, 0, Math.PI * 2, false);
         context.closePath();
-        
-        context.strokeStyle = context.fillStyle = color;
+
+        context.strokeStyle = color;
         context.stroke();
-        context.fill();
+
+        if (fill) {
+            context.fillStyle = color;
+            context.fill();
+        }
+    };
+
+    this.drawVector = function (x, y, vx, vy) {
+        var cx = x*width;
+        var cy = y*width;
+        var cvx = vx*width;
+        var cvy = vy*width;
+
+        context.beginPath();
+        context.moveTo(cx, cy);
+        context.lineTo(cvx, cvy);
+        context.stroke()
     };
 
     this.resetCanvas = function () {
