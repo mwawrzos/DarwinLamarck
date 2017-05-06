@@ -1,6 +1,6 @@
 from mesa.visualization.ModularVisualization import ModularServer
 
-from Boids import GrassAgent, SheepAgent
+from Boids import GrassAgent, SheepAgent, WolfAgent
 from Graphics import VerySimpleCanvas
 from HistogramModule import HistogramModule
 from SimulationModel import SimulationModel
@@ -15,6 +15,7 @@ server = ModularServer(SimulationModel,
                        x_max=10,
                        y_max=10,
                        agents=[(GrassAgent, 100),
-                               (SheepAgent, 50)])
+                               (SheepAgent, 50),
+                               (WolfAgent, 10)])
 if __name__ == '__main__':
     server.launch()

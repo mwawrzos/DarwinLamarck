@@ -16,7 +16,7 @@ var AgentVisualization = function (width, height, context) {
     this.drawCircle = function (x, y, radius, color, fill) {
         var cx = x * width;
         var cy = y * height;
-        var r = radius;
+        var r = radius * width;
 
         context.beginPath();
         context.arc(cx, cy, r, 0, Math.PI * 2, false);
@@ -49,6 +49,7 @@ var AgentVisualization = function (width, height, context) {
     }
 };
 
+//noinspection JSUnusedGlobalSymbols
 var VerySimpleContinuousModule = function (canvas_width, canvas_height) {
     var canvas_tag =
         "<canvas width='" + canvas_width + "' height='" + canvas_height + "' style='border:1px dotted'></canvas>";
@@ -58,11 +59,13 @@ var VerySimpleContinuousModule = function (canvas_width, canvas_height) {
     var context = canvas.getContext("2d");
     var canvasDraw = new AgentVisualization(canvas_width, canvas_height, context);
 
+    //noinspection JSUnusedGlobalSymbols
     this.render = function (data) {
         canvasDraw.resetCanvas();
         canvasDraw.draw(data);
     };
 
+    //noinspection JSUnusedGlobalSymbols
     this.reset = function () {
         canvasDraw.resetCanvas();
     };

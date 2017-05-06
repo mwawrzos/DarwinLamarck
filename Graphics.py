@@ -1,7 +1,5 @@
 from mesa.visualization.ModularVisualization import VisualizationElement
 
-from Boids import BaseAgent
-
 
 class VerySimpleCanvas(VisualizationElement):
     local_includes = ['Graphics.js']
@@ -32,6 +30,7 @@ class VerySimpleCanvas(VisualizationElement):
                 vx, vy = x, y
             portrayal['vx'] = vx
             portrayal['vy'] = vy
+            portrayal['r'] = obj.r / space_width
             if 'rs' in portrayal:
                 portrayal['rs'] = portrayal['rs'] / space_width
             space_state.append(portrayal)
