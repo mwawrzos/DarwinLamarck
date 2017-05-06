@@ -4,7 +4,7 @@ from Boids import BaseAgent
 
 
 class VerySimpleCanvas(VisualizationElement):
-    local_includes = ['graphics.js']
+    local_includes = ['Graphics.js']
 
     def __init__(self, portrayal_method, canvas_width=500, canvas_height=500):
         super().__init__()

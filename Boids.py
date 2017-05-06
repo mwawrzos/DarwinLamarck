@@ -1,25 +1,8 @@
-from math import sqrt
-from Types import t_matcher
-
 import numpy as np
 
-
-def vector_from(agent):
-    return lambda neighbour: agent - neighbour
-
-
-def neighbours_vectors(me, neighbours):
-    return map(vector_from(me),
-               map(BaseAgent.pos_vector,
-                   neighbours))
-
-
-def sqr_dst(vec):
-    return vec[0] * vec[0] + vec[1] * vec[1]
-
-
-def v_len(vec):
-    return sqrt(sqr_dst(vec))
+from Types import t_matcher
+from Flocking import Flocking
+from MathUtlis import neighbours_vectors, norm, sqr_dst
 
 
 class BaseAgent:
@@ -38,9 +21,6 @@ class BaseAgent:
 
     def draw(self):
         pass
-
-    def pos_vector(self):
-        return np.array(self.pos)
 
 
 class MarkerAgent(BaseAgent):
@@ -66,13 +46,6 @@ class GrassAgent(BaseAgent):
 
     def advance(self):
         pass
-
-
-def norm(new_heading):
-    length = v_len(new_heading)
-    if length:
-        new_heading = new_heading / length
-    return new_heading
 
 
 class SheepAgent(BaseAgent):
@@ -106,32 +79,6 @@ class SheepAgent(BaseAgent):
         return decisions[self.decision]
 
 
-def cohere(me, neighbours):
-    return -norm(sum(neighbours_vectors(me, neighbours),
-                     np.array([0, 0])))
-
-
-def separation_scaling(vector):
-    length = v_len(vector)
-    return vector * (1.5 - length) / length
-
-
-def separate(me, neighbours):
-    return sum(map(separation_scaling,
-                   filter(lambda v: v_len(v) < 1.5,
-                          neighbours_vectors(me, neighbours))),
-               np.array([0, 0]))
-
-
-def match(neighbours):
-    return np.mean([neighbour.heading for neighbour in neighbours]) if len(neighbours) else np.array([0, 0])
-
-
-def flocking(me, neighbours):
-    neighbours = list(filter(t_matcher(SheepAgent), neighbours))
-    return cohere(me, neighbours) + separate(me, neighbours) + match(neighbours)
-
-
 def eating(me, neighbours):
     neighbours = list(filter(t_matcher(GrassAgent), neighbours))
     if len(neighbours):
@@ -145,4 +92,4 @@ def escaping(me, neighbours):
     return np.array([.0,.0])
 
 
-decisions = [flocking, eating, escaping]
+decisions = [Flocking(SheepAgent, 1.5), eating, escaping]

@@ -5,7 +5,7 @@ from HistogramModule import HistogramModule
 from SimulationModel import SimulationModel
 import random
 from Boids import GrassAgent, SheepAgent, MarkerAgent
-from grphics import VerySimpleCanvas
+from Graphics import VerySimpleCanvas
 
 agent_canvas = VerySimpleCanvas(lambda agent: agent.draw())
 
