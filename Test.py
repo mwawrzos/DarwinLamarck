@@ -1,6 +1,9 @@
+from Boids import SheepAgent, GrassAgent
 from SimulationModel import SimulationModel
-from VizualizationServer import make_agents
 
-model = SimulationModel(make_agents(10, 10))
+model = SimulationModel(x_max=10,
+                        y_max=10,
+                        agents=[(GrassAgent, 100),
+                                (SheepAgent, 50)])
 for i in range(100):
     model.step()
