@@ -25,7 +25,7 @@ var HistogramModule = function(bins, canvas_width, canvas_height) {
     }];
 
     // Add a zero value for each bin
-    for (var i in bins)
+    for (var _ in bins)
         datasets[0].data.push(0);
 
     var data = {
@@ -34,13 +34,14 @@ var HistogramModule = function(bins, canvas_width, canvas_height) {
     };
 
     var options = {
-        scaleBeginsAtZero: true
+        scaleBeginsAtZero: true,
+        animationSteps: 1
     };
 
     // Create the chart object
     var chart = new Chart(context).Bar(data, options);
 
-        this.render = function(data) {
+    this.render = function (data) {
         for (var i in data)
             chart.datasets[0].bars[i].value = data[i];
         chart.update();

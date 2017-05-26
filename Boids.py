@@ -1,3 +1,6 @@
+from bisect import bisect_left
+from math import sqrt
+
 import numpy as np
 
 from Flock import Flock
@@ -102,12 +105,15 @@ class WolfAgent(AutonomicAgent):
 
 
 class SheepAgent(AutonomicAgent):
+    starved = 0
+
     def __init__(self, unique_id, space, model, x, y, max_speed=0.03, heading=None):
         super().__init__(unique_id, space, model, x, y, r=0.1, max_speed=max_speed, heading=heading)
+        self.maxEnergy = 200
         self.asd = [i for (i, c) in enumerate([33, 22, 33]) for _ in range(c)]
-        self.energy = 500
+        self.energy = self.maxEnergy
 
-        self.decisions = [Flock(SheepAgent), Eating(GrassAgent), escaping]
+        self.decisions = [Eating(GrassAgent), escaping, Flock(SheepAgent)]
 
     def advance(self):
         super().advance()
@@ -119,20 +125,50 @@ class SheepAgent(AutonomicAgent):
         self.energy -= 1
 
         neighbors = self.space.get_neighbors(self.pos, self.r * 2)
-        if self.energy < 500 and any(map(t_matcher(GrassAgent), neighbors)):
-            self.energy += 20
+        if any(map(t_matcher(GrassAgent), neighbors)):
+            self.energy += 10
+        self.energy = min(self.maxEnergy, self.energy)
 
     def draw(self):
         return {'Color': 'blue', 'rs': BaseAgent.vision}
 
     def distributed_decision(self):
-        self.decision = np.random.choice(self.asd)
-        return self.decisions[self.decision]
+        hunger = (self.maxEnergy - self.energy) * 5 + 0
+        fear = self.fear() * 500 + 0
+        coupling = 20
+        decisions = [hunger,
+                     hunger + fear,
+                     hunger + fear + coupling]
+        print(decisions)
+        decision = np.random.rand() * decisions[-1]
+
+        # self.decision = np.random.choice(self.asd)
+        left = bisect_left(decisions, decision)
+        return self.decisions[left]
 
     def die(self):
         # noinspection PyProtectedMember
         self.space._remove_agent(self.pos, self)
         self.model.schedule.remove(self)
+        self.model.starved += 1
+
+    def fear(self):
+        neighbors = self.space.get_neighbors(self.pos, BaseAgent.vision, False)
+        wolves = list(filter(t_matcher(WolfAgent), neighbors))
+        distances = list(map(self.dst, wolves))
+        vision_ = BaseAgent.vision - sqrt(min(distances, default=BaseAgent.vision * BaseAgent.vision))
+        if vision_ < 0:
+            print('dziwne', distances)
+        return vision_ / BaseAgent.vision
+
+    def dst(self, neighbour):
+        x1, y1 = self.pos
+        x2, y2 = neighbour.pos
+        d_x = abs(x1 - x2)
+        d_y = abs(y1 - y2)
+        dx = min(d_x, self.space.width - d_x)
+        dy = min(d_y, self.space.height - d_y)
+        return dx * dx + dy * dy
 
 
 def colliding_decision(agent):
@@ -154,8 +190,6 @@ class Eating:
 
     def __call__(self, me, neighbours):
         neighbours = list(filter(t_matcher(self.food_type), neighbours))
-        if len(neighbours):
-            return -min(neighbours_vectors(me, neighbours),
-                        key=sqr_dst)
-        else:
-            return np.array([0, 0])
+        return -min(neighbours_vectors(me, neighbours),
+                    key=sqr_dst,
+                    default=np.array([0, 0]))

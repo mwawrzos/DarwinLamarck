@@ -34,6 +34,8 @@ class SimulationModel(Model):
         for agent in make_agents(x_max, y_max, agents, self):
             self.schedule.add(agent)
 
+        self.starved = 0
+
         self.data_collector = DataCollector(
             agent_reporters={'decision': lambda a: a.decision}
         )
