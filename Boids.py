@@ -11,11 +11,10 @@ from Types import t_matcher
 class BaseAgent:
     vision = 2
 
-    def __init__(self, unique_id, space, model, x, y, r):
+    def __init__(self, space, model, x, y, r):
         super().__init__()
         self.model = model
         self.r = r
-        self.unique_id = unique_id
         self.space = space
         self.pos = (x, y)
         self.space.place_agent(self, self.pos)
@@ -29,8 +28,8 @@ class BaseAgent:
 
 
 class AutonomicAgent(BaseAgent):
-    def __init__(self, unique_id, space, model, x, y, r, max_speed, heading=None):
-        super().__init__(unique_id, space, model, x, y, r)
+    def __init__(self, space, model, x, y, r, max_speed, heading=None):
+        super().__init__(space, model, x, y, r)
         self.max_speed = max_speed
         self.heading = heading if heading else np.random.random(2)
 
@@ -60,8 +59,8 @@ class AutonomicAgent(BaseAgent):
 
 
 class MarkerAgent(BaseAgent):
-    def __init__(self, unique_id, space, model, x, y):
-        super().__init__(unique_id, space, model, x, y, r=0.02)
+    def __init__(self, space, model, x, y):
+        super().__init__(space, model, x, y, r=0.02)
         self.r = 0.02
 
     def draw(self):
@@ -75,8 +74,8 @@ class MarkerAgent(BaseAgent):
 
 
 class GrassAgent(BaseAgent):
-    def __init__(self, unique_id, space, model, x, y):
-        super().__init__(unique_id, space, model, x, y, r=0.06)
+    def __init__(self, space, model, x, y):
+        super().__init__(space, model, x, y, r=0.06)
         self.r = 0.06
 
     def draw(self):
@@ -90,8 +89,8 @@ class GrassAgent(BaseAgent):
 
 
 class WolfAgent(AutonomicAgent):
-    def __init__(self, unique_id, space, model, x, y, max_speed=0.03, heading=None):
-        super().__init__(unique_id, space, model, x, y, r=0.14, max_speed=max_speed, heading=heading)
+    def __init__(self, space, model, x, y, max_speed=0.03, heading=None):
+        super().__init__(space, model, x, y, r=0.14, max_speed=max_speed, heading=heading)
         self.r = 0.14
         self.asd = [i for (i, c) in enumerate([1, 1]) for _ in range(c)]
         self.decisions = [Flock(WolfAgent), Eating(SheepAgent)]
@@ -107,8 +106,8 @@ class WolfAgent(AutonomicAgent):
 class SheepAgent(AutonomicAgent):
     starved = 0
 
-    def __init__(self, unique_id, space, model, x, y, max_speed=0.03, heading=None):
-        super().__init__(unique_id, space, model, x, y, r=0.1, max_speed=max_speed, heading=heading)
+    def __init__(self, space, model, x, y, max_speed=0.03, heading=None):
+        super().__init__(space, model, x, y, r=0.1, max_speed=max_speed, heading=heading)
         self.maxEnergy = 200
         self.asd = [i for (i, c) in enumerate([33, 22, 33]) for _ in range(c)]
         self.energy = self.maxEnergy
@@ -139,7 +138,6 @@ class SheepAgent(AutonomicAgent):
         decisions = [hunger,
                      hunger + fear,
                      hunger + fear + coupling]
-        print(decisions)
         decision = np.random.rand() * decisions[-1]
 
         # self.decision = np.random.choice(self.asd)
