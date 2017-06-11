@@ -1,5 +1,7 @@
 from mesa.visualization.ModularVisualization import VisualizationElement
 
+from Boids import AutonomicAgent
+
 
 class VerySimpleCanvas(VisualizationElement):
     local_includes = ['Graphics.js']
@@ -23,13 +25,18 @@ class VerySimpleCanvas(VisualizationElement):
             x, y = x/space_width, y/space_width
             portrayal['x'] = x
             portrayal['y'] = y
-            if obj.heading is not None and obj.max_speed is not None:
+            if isinstance(obj, AutonomicAgent):
                 vx, vy = obj.pos + obj.heading * obj.max_speed * 10
                 vx, vy = vx/space_width, vy/space_width
+                v2x, v2y = obj.pos + obj.new_heading
+                v2x, v2y = v2x / space_width, v2y / space_width
             else:
                 vx, vy = x, y
+                v2x, v2y = x, y
             portrayal['vx'] = vx
             portrayal['vy'] = vy
+            portrayal['v2x'] = v2x
+            portrayal['v2y'] = v2y
             portrayal['r'] = obj.r / space_width
             if 'rs' in portrayal:
                 portrayal['rs'] = portrayal['rs'] / space_width

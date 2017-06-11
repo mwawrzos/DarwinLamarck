@@ -1,10 +1,10 @@
+import itertools
 from bisect import bisect_left
-from math import sqrt
 
 import numpy as np
 
 from Flock import Flock
-from MathUtlis import neighbours_vectors, norm, sqr_dst
+from MathUtlis import norm, pos_vector, vector2d
 from Types import t_matcher
 
 
@@ -34,6 +34,7 @@ class AutonomicAgent(BaseAgent):
         self.heading = heading if heading else np.random.random(2)
 
         self.new_pos = None
+        self.new_heading = self.heading
 
     def step(self):
         self.update_heading(self.space.get_neighbors(self.pos, BaseAgent.vision, False))
@@ -50,8 +51,8 @@ class AutonomicAgent(BaseAgent):
 
     def update_heading(self, neighbours):
         # noinspection PyCallingNonCallable
-        new_heading = self.distributed_decision()(np.array(self.pos), neighbours)
-        self.heading += norm(new_heading) * 0.3
+        self.new_heading = self.distributed_decision()(neighbours)
+        self.heading += norm(self.new_heading) * 0.3
         self.heading = norm(self.heading)
 
     def distributed_decision(self):
@@ -93,7 +94,7 @@ class WolfAgent(AutonomicAgent):
         super().__init__(space, model, x, y, r=0.14, max_speed=max_speed, heading=heading)
         self.r = 0.14
         self.asd = [i for (i, c) in enumerate([1, 1]) for _ in range(c)]
-        self.decisions = [Flock(WolfAgent), Eating(SheepAgent)]
+        self.decisions = [Flock(self, WolfAgent, space), eating(self, SheepAgent, space)]
 
     def draw(self):
         return {'Color': 'red', 'rs': BaseAgent.vision}
@@ -101,6 +102,17 @@ class WolfAgent(AutonomicAgent):
     def distributed_decision(self):
         self.decision = np.random.choice(self.asd)
         return self.decisions[self.decision]
+
+    def advance(self):
+        super().advance()
+        self.eat_sheep()
+
+    def eat_sheep(self):
+        neighbors = self.space.get_neighbors(self.pos, self.r * 2)
+        for sheep in filter(t_matcher(SheepAgent), neighbors):
+            # noinspection PyProtectedMember
+            self.space._remove_agent(sheep.pos, sheep)
+            self.model.schedule.remove(sheep)
 
 
 class SheepAgent(AutonomicAgent):
@@ -112,7 +124,10 @@ class SheepAgent(AutonomicAgent):
         self.asd = [i for (i, c) in enumerate([33, 22, 33]) for _ in range(c)]
         self.energy = self.maxEnergy
 
-        self.decisions = [Eating(GrassAgent), escaping, Flock(SheepAgent)]
+        self.decision = 0
+        self.decisions = [eating(self, GrassAgent, space),
+                          escaping(self, space),
+                          Flock(self, SheepAgent, space)]
 
     def advance(self):
         super().advance()
@@ -132,17 +147,18 @@ class SheepAgent(AutonomicAgent):
         return {'Color': 'blue', 'rs': BaseAgent.vision}
 
     def distributed_decision(self):
+        neighbors = self.space.get_neighbors(self.pos, BaseAgent.vision, False)
+
         hunger = (self.maxEnergy - self.energy) * 5 + 0
-        fear = self.fear() * 500 + 0
-        coupling = 20
+        fear = self.threat_ratio(filter(t_matcher(WolfAgent), neighbors)) * 500 + 0
+        coupling = self.threat_ratio(filter(t_matcher(SheepAgent), neighbors)) * 200 + 1
         decisions = [hunger,
                      hunger + fear,
                      hunger + fear + coupling]
-        decision = np.random.rand() * decisions[-1]
+        decision = np.random.randint(decisions[-1] + 1)
 
-        # self.decision = np.random.choice(self.asd)
-        left = bisect_left(decisions, decision)
-        return self.decisions[left]
+        self.decision = bisect_left(decisions, decision)
+        return self.decisions[self.decision]
 
     def die(self):
         # noinspection PyProtectedMember
@@ -150,23 +166,12 @@ class SheepAgent(AutonomicAgent):
         self.model.schedule.remove(self)
         self.model.starved += 1
 
-    def fear(self):
-        neighbors = self.space.get_neighbors(self.pos, BaseAgent.vision, False)
-        wolves = list(filter(t_matcher(WolfAgent), neighbors))
-        distances = list(map(self.dst, wolves))
-        vision_ = BaseAgent.vision - sqrt(min(distances, default=BaseAgent.vision * BaseAgent.vision))
-        if vision_ < 0:
-            print('dziwne', distances)
-        return vision_ / BaseAgent.vision
-
-    def dst(self, neighbour):
-        x1, y1 = self.pos
-        x2, y2 = neighbour.pos
-        d_x = abs(x1 - x2)
-        d_y = abs(y1 - y2)
-        dx = min(d_x, self.space.width - d_x)
-        dy = min(d_y, self.space.height - d_y)
-        return dx * dx + dy * dy
+    def threat_ratio(self, neighbours):
+        distances = map(self.space.get_distance,
+                        itertools.repeat(self.pos),
+                        map(pos_vector, neighbours))
+        min_distance = min(distances, default=BaseAgent.vision)
+        return (BaseAgent.vision - min_distance) / BaseAgent.vision
 
 
 def colliding_decision(agent):
@@ -176,18 +181,20 @@ def colliding_decision(agent):
     return not not neighbours
 
 
-def escaping(me, neighbours):
-    neighbours = filter(t_matcher(WolfAgent), neighbours)
-    return sum(neighbours_vectors(me, neighbours),
-               np.array([0, 0]))
+def escaping(me, space):
+    return Flock(me, WolfAgent, space, match_w=0, coherence_w=0)
 
 
-class Eating:
-    def __init__(self, food_type):
-        self.food_type = food_type
+def eating(me, food_type, space):
+    def distance_to_me(x):
+        distance = space.get_distance(me.pos, x)
+        return distance
 
-    def __call__(self, me, neighbours):
-        neighbours = list(filter(t_matcher(self.food_type), neighbours))
-        return -min(neighbours_vectors(me, neighbours),
-                    key=sqr_dst,
-                    default=np.array([0, 0]))
+    def eating_(neighbours):
+        neighbours = list(filter(t_matcher(food_type), neighbours))
+        closest = min(map(pos_vector, neighbours),
+                      key=distance_to_me,
+                      default=me.pos)
+        return vector2d(space)(me.pos, closest)
+
+    return eating_

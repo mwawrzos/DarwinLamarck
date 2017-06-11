@@ -9,7 +9,7 @@ var AgentVisualization = function (width, height, context) {
             var p = objects[i];
             this.drawCircle(p.x, p.y, p.r, p.Color, true);   // agent
             // this.drawCircle(p.x, p.y, p.rs*width, 'green', false); // sight
-            this.drawVector(p.x, p.y, p.vx, p.vy);           // vector
+            this.drawVector(p.x, p.y, p.vx, p.vy, p.v2x, p.v2y);           // vector
         }
     };
     
@@ -31,15 +31,22 @@ var AgentVisualization = function (width, height, context) {
         }
     };
 
-    this.drawVector = function (x, y, vx, vy) {
+    this.drawVector = function (x, y, vx, vy, v2x, v2y) {
         var cx = x*width;
         var cy = y*width;
         var cvx = vx*width;
         var cvy = vy*width;
+        var cv2x = v2x * width;
+        var cv2y = v2y * width;
 
         context.beginPath();
         context.moveTo(cx, cy);
         context.lineTo(cvx, cvy);
+        context.stroke();
+
+        context.beginPath();
+        context.moveTo(cx, cy);
+        context.lineTo(cv2x, cv2y);
         context.stroke()
     };
 
