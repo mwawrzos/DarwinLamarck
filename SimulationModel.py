@@ -6,20 +6,17 @@ from mesa.space import ContinuousSpace
 from mesa.time import SimultaneousActivation
 
 
-def construct_agents(constructor, count, space, model):
+def construct_agents(constructor, count, space):
     return [constructor(space,
-                        model,
                         random.random() * space.x_max,
                         random.random() * space.y_max)
             for _ in range(count)]
 
 
-def make_agents(x_max, y_max, agents, model):
-    space = ContinuousSpace(x_max, y_max, True, grid_width=10, grid_height=10)
-
+def make_agents(agents, space):
     res = []
     for agent_type, count in agents:
-        res.extend(construct_agents(agent_type, count, space, model))
+        res.extend(construct_agents(agent_type, count, space))
 
     return res
 
@@ -29,7 +26,8 @@ class SimulationModel(Model):
         super().__init__()
 
         self.schedule = SimultaneousActivation(self)
-        for agent in make_agents(x_max, y_max, agents, self):
+        self.space = ContinuousSpace(x_max, y_max, True, grid_width=10, grid_height=10)
+        for agent in make_agents(agents, self.space):
             self.schedule.add(agent)
 
         self.starved = 0
@@ -40,3 +38,12 @@ class SimulationModel(Model):
 
     def step(self):
         self.schedule.step()
+        self.cleanup_corpses()
+
+    def cleanup_corpses(self):
+        for agent in self.schedule.agents:
+            if agent.energy <= 0:
+                self.starved += 1
+                self.schedule.remove(agent)
+                # noinspection PyProtectedMember
+                self.space._remove_agent(agent.pos, agent)

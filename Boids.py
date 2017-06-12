@@ -11,9 +11,8 @@ from Types import t_matcher
 class BaseAgent:
     vision = 2
 
-    def __init__(self, space, model, x, y, r):
+    def __init__(self, space, x, y, r):
         super().__init__()
-        self.model = model
         self.r = r
         self.space = space
         self.pos = (x, y)
@@ -22,14 +21,15 @@ class BaseAgent:
         self.decision = -1
         self.heading = None
         self.max_speed = None
+        self.energy = 1
 
     def draw(self):
         pass
 
 
 class AutonomicAgent(BaseAgent):
-    def __init__(self, space, model, x, y, r, max_speed, heading=None):
-        super().__init__(space, model, x, y, r)
+    def __init__(self, space, x, y, r, max_speed, heading=None):
+        super().__init__(space, x, y, r)
         self.max_speed = max_speed
         self.heading = heading if heading else np.random.random(2)
 
@@ -47,7 +47,7 @@ class AutonomicAgent(BaseAgent):
             self.space.move_agent(self, self.new_pos)
 
     def valid_decision(self):
-        return not colliding_decision(self)
+        return not colliding_decision(self) and self.energy > 0
 
     def update_heading(self, neighbours):
         # noinspection PyCallingNonCallable
@@ -60,8 +60,8 @@ class AutonomicAgent(BaseAgent):
 
 
 class MarkerAgent(BaseAgent):
-    def __init__(self, space, model, x, y):
-        super().__init__(space, model, x, y, r=0.02)
+    def __init__(self, space, x, y):
+        super().__init__(space, x, y, r=0.02)
         self.r = 0.02
 
     def draw(self):
@@ -75,8 +75,8 @@ class MarkerAgent(BaseAgent):
 
 
 class GrassAgent(BaseAgent):
-    def __init__(self, space, model, x, y):
-        super().__init__(space, model, x, y, r=0.06)
+    def __init__(self, space, x, y):
+        super().__init__(space, x, y, r=0.06)
         self.r = 0.06
 
     def draw(self):
@@ -90,11 +90,12 @@ class GrassAgent(BaseAgent):
 
 
 class WolfAgent(AutonomicAgent):
-    def __init__(self, space, model, x, y, max_speed=0.03, heading=None):
-        super().__init__(space, model, x, y, r=0.14, max_speed=max_speed, heading=heading)
+    def __init__(self, space, x, y, max_speed=0.03, heading=None):
+        super().__init__(space, x, y, r=0.14, max_speed=max_speed, heading=heading)
         self.r = 0.14
         self.asd = [i for (i, c) in enumerate([1, 1]) for _ in range(c)]
         self.decisions = [Flock(self, WolfAgent, space), eating(self, SheepAgent, space)]
+        self.energy = 200
 
     def draw(self):
         return {'Color': 'red', 'rs': BaseAgent.vision}
@@ -110,16 +111,14 @@ class WolfAgent(AutonomicAgent):
     def eat_sheep(self):
         neighbors = self.space.get_neighbors(self.pos, self.r * 2)
         for sheep in filter(t_matcher(SheepAgent), neighbors):
-            # noinspection PyProtectedMember
-            self.space._remove_agent(sheep.pos, sheep)
-            self.model.schedule.remove(sheep)
+            self.energy, sheep.energy = self.energy + sheep.energy, 0
 
 
 class SheepAgent(AutonomicAgent):
     starved = 0
 
-    def __init__(self, space, model, x, y, max_speed=0.03, heading=None):
-        super().__init__(space, model, x, y, r=0.1, max_speed=max_speed, heading=heading)
+    def __init__(self, space, x, y, max_speed=0.03, heading=None):
+        super().__init__(space, x, y, r=0.1, max_speed=max_speed, heading=heading)
         self.maxEnergy = 200
         self.asd = [i for (i, c) in enumerate([33, 22, 33]) for _ in range(c)]
         self.energy = self.maxEnergy
@@ -132,8 +131,6 @@ class SheepAgent(AutonomicAgent):
     def advance(self):
         super().advance()
         self.update_energy()
-        if self.energy < 0:
-            self.die()
 
     def update_energy(self):
         self.energy -= 1
@@ -159,12 +156,6 @@ class SheepAgent(AutonomicAgent):
 
         self.decision = bisect_left(decisions, decision)
         return self.decisions[self.decision]
-
-    def die(self):
-        # noinspection PyProtectedMember
-        self.space._remove_agent(self.pos, self)
-        self.model.schedule.remove(self)
-        self.model.starved += 1
 
     def threat_ratio(self, neighbours):
         distances = map(self.space.get_distance,
