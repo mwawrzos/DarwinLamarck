@@ -16,7 +16,6 @@ class BaseAgent:
         self.r = r
         self.space = space
         self.pos = (x, y)
-        self.space.place_agent(self, self.pos)
 
         self.decision = -1
         self.heading = None

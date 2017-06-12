@@ -37,8 +37,8 @@ def vector2d(space):
         dx1 = -np.sign(dx) * space.x_max + dx
         dy1 = -np.sign(dy) * space.y_max + dy
 
-        dx = dx if abs(dx / dx1) <= 1 else dx1
-        dy = dy if abs(dy / dy1) <= 1 else dy1
+        dx = dx if dx1 and abs(dx / dx1) <= 1 else dx1
+        dy = dy if dx1 and abs(dy / dy1) <= 1 else dy1
 
         return np.array([dx, dy])
 

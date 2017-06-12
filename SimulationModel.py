@@ -29,6 +29,8 @@ class SimulationModel(Model):
         self.space = ContinuousSpace(x_max, y_max, True, grid_width=10, grid_height=10)
         for agent in make_agents(agents, self.space):
             self.schedule.add(agent)
+        for agent in self.schedule.agents:
+            self.space.place_agent(agent, agent.pos)
 
         self.starved = 0
 
