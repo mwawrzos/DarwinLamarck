@@ -9,7 +9,8 @@ from mesa.time import SimultaneousActivation
 def construct_agents(constructor, count, space):
     return [constructor(space,
                         random.random() * space.x_max,
-                        random.random() * space.y_max)
+                        random.random() * space.y_max,
+                        [])
             for _ in range(count)]
 
 

@@ -21,6 +21,7 @@ class BaseAgent:
         self.heading = None
         self.max_speed = None
         self.energy = 1
+        self.max_energy = 1
 
     def draw(self):
         pass
@@ -34,9 +35,14 @@ class AutonomicAgent(BaseAgent):
 
         self.new_pos = None
         self.new_heading = self.heading
+        self.v_neighbors = []
+        self.r_neighbors = []
 
     def step(self):
-        self.update_heading(self.space.get_neighbors(self.pos, BaseAgent.vision, False))
+        self.v_neighbors = self.space.get_neighbors(self.pos, BaseAgent.vision, False)
+        self.r_neighbors = list(filter(lambda x: 2 * self.r <= self.space.get_distance(x.pos, self.pos),
+                                       self.v_neighbors))
+        self.update_heading(self.v_neighbors)
         new_pos = np.array(self.pos) + self.heading * self.max_speed
         (new_x, new_y) = new_pos
         self.new_pos = self.space.torus_adj((new_x, new_y))
@@ -46,7 +52,7 @@ class AutonomicAgent(BaseAgent):
             self.space.move_agent(self, self.new_pos)
 
     def valid_decision(self):
-        return not colliding_decision(self) and self.energy > 0
+        return not colliding_decision(self, self.r_neighbors) and self.energy > 0
 
     def update_heading(self, neighbours):
         # noinspection PyCallingNonCallable
@@ -74,7 +80,7 @@ class MarkerAgent(BaseAgent):
 
 
 class GrassAgent(BaseAgent):
-    def __init__(self, space, x, y):
+    def __init__(self, space, x, y, param):
         super().__init__(space, x, y, r=0.06)
         self.r = 0.06
 
@@ -89,7 +95,7 @@ class GrassAgent(BaseAgent):
 
 
 class WolfAgent(AutonomicAgent):
-    def __init__(self, space, x, y, max_speed=0.03, heading=None):
+    def __init__(self, space, x, y, param, max_speed=0.03, heading=None):
         super().__init__(space, x, y, r=0.14, max_speed=max_speed, heading=heading)
         self.r = 0.14
         self.asd = [i for (i, c) in enumerate([1, 1]) for _ in range(c)]
@@ -108,15 +114,14 @@ class WolfAgent(AutonomicAgent):
         self.eat_sheep()
 
     def eat_sheep(self):
-        neighbors = self.space.get_neighbors(self.pos, self.r * 2)
-        for sheep in filter(t_matcher(SheepAgent), neighbors):
+        for sheep in filter(t_matcher(SheepAgent), self.r_neighbors):
             self.energy, sheep.energy = self.energy + sheep.energy, 0
 
 
 class SheepAgent(AutonomicAgent):
     starved = 0
 
-    def __init__(self, space, x, y, max_speed=0.03, heading=None):
+    def __init__(self, space, x, y, param, max_speed=0.03, heading=None):
         super().__init__(space, x, y, r=0.1, max_speed=max_speed, heading=heading)
         self.maxEnergy = 200
         self.asd = [i for (i, c) in enumerate([33, 22, 33]) for _ in range(c)]
@@ -134,8 +139,7 @@ class SheepAgent(AutonomicAgent):
     def update_energy(self):
         self.energy -= 1
 
-        neighbors = self.space.get_neighbors(self.pos, self.r * 2)
-        if any(map(t_matcher(GrassAgent), neighbors)):
+        if any(map(t_matcher(GrassAgent), self.r_neighbors)):
             self.energy += 10
         self.energy = min(self.maxEnergy, self.energy)
 
@@ -143,11 +147,9 @@ class SheepAgent(AutonomicAgent):
         return {'Color': 'blue', 'rs': BaseAgent.vision}
 
     def distributed_decision(self):
-        neighbors = self.space.get_neighbors(self.pos, BaseAgent.vision, False)
-
         hunger = (self.maxEnergy - self.energy) * 5 + 0
-        fear = self.threat_ratio(filter(t_matcher(WolfAgent), neighbors)) * 500 + 0
-        coupling = self.threat_ratio(filter(t_matcher(SheepAgent), neighbors)) * 200 + 1
+        fear = self.threat_ratio(filter(t_matcher(WolfAgent), self.v_neighbors)) * 500 + 0
+        coupling = self.threat_ratio(filter(t_matcher(SheepAgent), self.v_neighbors)) * 200 + 1
         decisions = [hunger,
                      hunger + fear,
                      hunger + fear + coupling]
@@ -164,9 +166,8 @@ class SheepAgent(AutonomicAgent):
         return (BaseAgent.vision - min_distance) / BaseAgent.vision
 
 
-def colliding_decision(agent):
-    neighbours = agent.space.get_neighbors(agent.new_pos, agent.r * 2)
-    neighbours = list(filter(t_matcher(type(agent)), neighbours))
+def colliding_decision(agent, neighbors):
+    neighbours = list(filter(t_matcher(type(agent)), neighbors))
     neighbours.remove(agent)
     return not not neighbours
 
