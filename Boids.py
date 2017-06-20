@@ -33,14 +33,14 @@ class AutonomicAgent(BaseAgent):
         self.max_speed = max_speed
         self.heading = heading if heading else np.random.random(2)
 
-        self.new_pos = None
+        self.new_pos = self.pos
         self.new_heading = self.heading
         self.v_neighbors = []
         self.r_neighbors = []
 
     def step(self):
-        self.v_neighbors = self.space.get_neighbors(self.pos, BaseAgent.vision, False)
-        self.r_neighbors = list(filter(lambda x: 2 * self.r >= self.space.get_distance(x.pos, self.pos),
+        self.v_neighbors = self.space.get_neighbors(self.pos, BaseAgent.vision, include_center=False)
+        self.r_neighbors = list(filter(lambda x: 2 * self.r >= self.space.get_distance(x.pos, self.new_pos),
                                        self.v_neighbors))
         self.update_heading(self.v_neighbors)
         new_pos = np.array(self.pos) + self.heading * self.max_speed
@@ -52,7 +52,8 @@ class AutonomicAgent(BaseAgent):
             self.space.move_agent(self, self.new_pos)
 
     def valid_decision(self):
-        return not colliding_decision(self, self.r_neighbors) and self.energy > 0
+        neighbors = filter(lambda x: not t_matcher(GrassAgent)(x), self.r_neighbors)
+        return not colliding_decision(self, neighbors) and self.energy > 0
 
     def update_heading(self, neighbours):
         # noinspection PyCallingNonCallable
@@ -100,7 +101,8 @@ class WolfAgent(AutonomicAgent):
         self.r = 0.14
         self.asd = [i for (i, c) in enumerate([1, 1]) for _ in range(c)]
         self.decisions = [Flock(self, WolfAgent, space), eating(self, SheepAgent, space)]
-        self.energy = 200
+        self.max_energy = 200
+        self.energy = self.max_energy
 
     def draw(self):
         return {'Color': 'red', 'rs': BaseAgent.vision}
@@ -111,7 +113,12 @@ class WolfAgent(AutonomicAgent):
 
     def advance(self):
         super().advance()
-        self.eat_sheep()
+        self.update_energy()
+
+    def update_energy(self):
+        self.energy -= 1
+        if self.energy < self.max_energy:
+            self.eat_sheep()
 
     def eat_sheep(self):
         for sheep in filter(t_matcher(SheepAgent), self.r_neighbors):
@@ -123,9 +130,8 @@ class SheepAgent(AutonomicAgent):
 
     def __init__(self, space, x, y, param, max_speed=0.03, heading=None):
         super().__init__(space, x, y, r=0.1, max_speed=max_speed, heading=heading)
-        self.maxEnergy = 200
-        self.asd = [i for (i, c) in enumerate([33, 22, 33]) for _ in range(c)]
-        self.energy = self.maxEnergy
+        self.max_energy = 200
+        self.energy = self.max_energy
 
         self.decision = 0
         self.decisions = [eating(self, GrassAgent, space),
@@ -138,16 +144,18 @@ class SheepAgent(AutonomicAgent):
 
     def update_energy(self):
         self.energy -= 1
+        if self.energy < self.max_energy:
+            self.eat_grass()
 
+    def eat_grass(self):
         if any(map(t_matcher(GrassAgent), self.r_neighbors)):
             self.energy += 10
-        self.energy = min(self.maxEnergy, self.energy)
 
     def draw(self):
         return {'Color': 'blue', 'rs': BaseAgent.vision}
 
     def distributed_decision(self):
-        hunger = (self.maxEnergy - self.energy) * 5 + 0
+        hunger = max(0, self.max_energy - self.energy) * 5 + 0
         fear = self.threat_ratio(filter(t_matcher(WolfAgent), self.v_neighbors)) * 500 + 0
         coupling = self.threat_ratio(filter(t_matcher(SheepAgent), self.v_neighbors)) * 200 + 1
         decisions = [hunger,
@@ -167,8 +175,7 @@ class SheepAgent(AutonomicAgent):
 
 
 def colliding_decision(agent, neighbors):
-    neighbors = filter(t_matcher(type(agent)), neighbors)
-    return not not list(neighbors)
+    return any(filter(lambda x: x != agent, neighbors))
 
 
 def escaping(me, space):
