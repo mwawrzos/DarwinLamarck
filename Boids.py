@@ -40,7 +40,7 @@ class AutonomicAgent(BaseAgent):
 
     def step(self):
         self.v_neighbors = self.space.get_neighbors(self.pos, BaseAgent.vision, False)
-        self.r_neighbors = list(filter(lambda x: 2 * self.r <= self.space.get_distance(x.pos, self.pos),
+        self.r_neighbors = list(filter(lambda x: 2 * self.r >= self.space.get_distance(x.pos, self.pos),
                                        self.v_neighbors))
         self.update_heading(self.v_neighbors)
         new_pos = np.array(self.pos) + self.heading * self.max_speed
@@ -167,9 +167,8 @@ class SheepAgent(AutonomicAgent):
 
 
 def colliding_decision(agent, neighbors):
-    neighbours = list(filter(t_matcher(type(agent)), neighbors))
-    neighbours.remove(agent)
-    return not not neighbours
+    neighbors = filter(t_matcher(type(agent)), neighbors)
+    return not not list(neighbors)
 
 
 def escaping(me, space):
