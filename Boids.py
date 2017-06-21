@@ -1,4 +1,5 @@
 import itertools
+from abc import abstractmethod, ABCMeta
 from bisect import bisect_left
 
 import numpy as np
@@ -27,9 +28,11 @@ class BaseAgent:
         pass
 
 
-class AutonomicAgent(BaseAgent):
+class AutonomicAgent(BaseAgent, metaclass=ABCMeta):
     def __init__(self, space, x, y, r, max_speed, heading=None):
         super().__init__(space, x, y, r)
+        self.max_energy = 200
+        self.energy = self.max_energy
         self.max_speed = max_speed
         self.heading = heading if heading else np.random.random(2)
 
@@ -40,16 +43,17 @@ class AutonomicAgent(BaseAgent):
 
     def step(self):
         self.v_neighbors = self.space.get_neighbors(self.pos, BaseAgent.vision, include_center=False)
-        self.r_neighbors = list(filter(lambda x: 2 * self.r >= self.space.get_distance(x.pos, self.new_pos),
-                                       self.v_neighbors))
         self.update_heading(self.v_neighbors)
         new_pos = np.array(self.pos) + self.heading * self.max_speed
         (new_x, new_y) = new_pos
         self.new_pos = self.space.torus_adj((new_x, new_y))
 
     def advance(self):
+        self.r_neighbors = list(filter(lambda x: 2 * self.r >= self.space.get_distance(x.pos, self.new_pos),
+                                       self.v_neighbors))
         if self.valid_decision():
             self.space.move_agent(self, self.new_pos)
+        self.update_energy()
 
     def valid_decision(self):
         neighbors = filter(lambda x: not t_matcher(GrassAgent)(x), self.r_neighbors)
@@ -61,8 +65,18 @@ class AutonomicAgent(BaseAgent):
         self.heading += norm(self.new_heading) * 0.3
         self.heading = norm(self.heading)
 
+    @abstractmethod
     def distributed_decision(self):
         pass
+
+    @abstractmethod
+    def eat(self):
+        pass
+
+    def update_energy(self):
+        self.energy -= 1
+        if self.energy < self.max_energy:
+            self.eat()
 
 
 class MarkerAgent(BaseAgent):
@@ -101,8 +115,6 @@ class WolfAgent(AutonomicAgent):
         self.r = 0.14
         self.asd = [i for (i, c) in enumerate([1, 1]) for _ in range(c)]
         self.decisions = [Flock(self, WolfAgent, space), eating(self, SheepAgent, space)]
-        self.max_energy = 200
-        self.energy = self.max_energy
 
     def draw(self):
         return {'Color': 'red', 'rs': BaseAgent.vision}
@@ -111,16 +123,7 @@ class WolfAgent(AutonomicAgent):
         self.decision = np.random.choice(self.asd)
         return self.decisions[self.decision]
 
-    def advance(self):
-        super().advance()
-        self.update_energy()
-
-    def update_energy(self):
-        self.energy -= 1
-        if self.energy < self.max_energy:
-            self.eat_sheep()
-
-    def eat_sheep(self):
+    def eat(self):
         for sheep in filter(t_matcher(SheepAgent), self.r_neighbors):
             self.energy, sheep.energy = self.energy + sheep.energy, 0
 
@@ -130,24 +133,13 @@ class SheepAgent(AutonomicAgent):
 
     def __init__(self, space, x, y, param, max_speed=0.03, heading=None):
         super().__init__(space, x, y, r=0.1, max_speed=max_speed, heading=heading)
-        self.max_energy = 200
-        self.energy = self.max_energy
 
         self.decision = 0
         self.decisions = [eating(self, GrassAgent, space),
                           escaping(self, space),
                           Flock(self, SheepAgent, space)]
 
-    def advance(self):
-        super().advance()
-        self.update_energy()
-
-    def update_energy(self):
-        self.energy -= 1
-        if self.energy < self.max_energy:
-            self.eat_grass()
-
-    def eat_grass(self):
+    def eat(self):
         if any(map(t_matcher(GrassAgent), self.r_neighbors)):
             self.energy += 10
 
