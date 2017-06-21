@@ -3,7 +3,7 @@ from abc import abstractmethod, ABCMeta
 
 import numpy as np
 
-from Flock import Flock
+from Flock import Flock, Separate
 from MathUtlis import norm, pos_vector, vector2d
 from Types import t_matcher
 from strategy import WeighedRandom, Decision
@@ -136,7 +136,7 @@ class SheepAgent(AutonomicAgent):
 
     def make_strategy(self, space):
         hunger = Decision(hunger_value, 5, 0, eating(self, GrassAgent, space))
-        fear = Decision(fear_value, 500, 0, escaping(self, space))
+        fear = Decision(fear_value, 500, 0, escaping(self, space, aggressor_type=WolfAgent))
         coupling = Decision(coupling_value, 200, 0, Flock(self, space))
 
         return WeighedRandom([hunger, fear, coupling])
@@ -149,7 +149,9 @@ class SheepAgent(AutonomicAgent):
         return {'Color': 'blue', 'rs': BaseAgent.vision}
 
     def distributed_decision(self):
-        return self.strategy(self)
+        strategy = self.strategy(self)
+        self.decision = self.strategy.decision
+        return strategy
 
 
 def threat_ratio(space, pos, neighbours):
@@ -176,8 +178,14 @@ def colliding_decision(agent, neighbors):
     return any(filter(lambda x: x != agent, neighbors))
 
 
-def escaping(me, space):
-    return Flock(me, space, match_w=0, coherence_w=0)
+def escaping(agent, space, aggressor_type):
+    separate = Separate(agent, space)
+
+    def escape(neighbours):
+        neighbours = filter(t_matcher(aggressor_type), neighbours)
+        return separate(neighbours)
+
+    return escape
 
 
 def eating(me, food_type, space):
