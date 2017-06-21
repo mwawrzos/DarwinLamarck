@@ -11,9 +11,8 @@ def match(neighbours):
 
 
 class Flock:
-    def __init__(self, me, flock_mem_type, space, coherence_w=1, separate_w=1, match_w=1, separation=1.5):
+    def __init__(self, me, space, coherence_w=1, separate_w=1, match_w=1, separation=1.5):
         self.me = me
-        self.flock_mem_type = flock_mem_type
         self.space = space
         self.coherence_w = coherence_w
         self.separate_w = separate_w
@@ -40,7 +39,7 @@ class Flock:
         return sum(neighbours_separation)
 
     def __call__(self, neighbours):
-        neighbours = list(filter(t_matcher(self.flock_mem_type), neighbours))
+        neighbours = list(filter(t_matcher(type(self.me)), neighbours))
         coherence = self.cohere(neighbours) * self.coherence_w
         separation = self.separate(neighbours) * self.separate_w
         matching = match(neighbours) * self.match_w

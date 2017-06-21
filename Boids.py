@@ -1,12 +1,12 @@
 import itertools
 from abc import abstractmethod, ABCMeta
-from bisect import bisect_left
 
 import numpy as np
 
 from Flock import Flock
 from MathUtlis import norm, pos_vector, vector2d
 from Types import t_matcher
+from strategy import WeighedRandom, Decision
 
 
 class BaseAgent:
@@ -112,9 +112,8 @@ class GrassAgent(BaseAgent):
 class WolfAgent(AutonomicAgent):
     def __init__(self, space, x, y, param, max_speed=0.03, heading=None):
         super().__init__(space, x, y, r=0.14, max_speed=max_speed, heading=heading)
-        self.r = 0.14
         self.asd = [i for (i, c) in enumerate([1, 1]) for _ in range(c)]
-        self.decisions = [Flock(self, WolfAgent, space), eating(self, SheepAgent, space)]
+        self.decisions = [Flock(self, space), eating(self, SheepAgent, space)]
 
     def draw(self):
         return {'Color': 'red', 'rs': BaseAgent.vision}
@@ -133,11 +132,14 @@ class SheepAgent(AutonomicAgent):
 
     def __init__(self, space, x, y, param, max_speed=0.03, heading=None):
         super().__init__(space, x, y, r=0.1, max_speed=max_speed, heading=heading)
+        self.strategy = self.make_strategy(space)
 
-        self.decision = 0
-        self.decisions = [eating(self, GrassAgent, space),
-                          escaping(self, space),
-                          Flock(self, SheepAgent, space)]
+    def make_strategy(self, space):
+        hunger = Decision(hunger_value, 5, 0, eating(self, GrassAgent, space))
+        fear = Decision(fear_value, 500, 0, escaping(self, space))
+        coupling = Decision(coupling_value, 200, 0, Flock(self, space))
+
+        return WeighedRandom([hunger, fear, coupling])
 
     def eat(self):
         if any(map(t_matcher(GrassAgent), self.r_neighbors)):
@@ -147,23 +149,27 @@ class SheepAgent(AutonomicAgent):
         return {'Color': 'blue', 'rs': BaseAgent.vision}
 
     def distributed_decision(self):
-        hunger = max(0, self.max_energy - self.energy) * 5 + 0
-        fear = self.threat_ratio(filter(t_matcher(WolfAgent), self.v_neighbors)) * 500 + 0
-        coupling = self.threat_ratio(filter(t_matcher(SheepAgent), self.v_neighbors)) * 200 + 1
-        decisions = [hunger,
-                     hunger + fear,
-                     hunger + fear + coupling]
-        decision = np.random.randint(decisions[-1] + 1)
+        return self.strategy(self)
 
-        self.decision = bisect_left(decisions, decision)
-        return self.decisions[self.decision]
 
-    def threat_ratio(self, neighbours):
-        distances = map(self.space.get_distance,
-                        itertools.repeat(self.pos),
-                        map(pos_vector, neighbours))
-        min_distance = min(distances, default=BaseAgent.vision)
-        return (BaseAgent.vision - min_distance) / BaseAgent.vision
+def threat_ratio(space, pos, neighbours):
+    distances = map(space.get_distance,
+                    itertools.repeat(pos),
+                    map(pos_vector, neighbours))
+    min_distance = min(distances, default=BaseAgent.vision)
+    return (BaseAgent.vision - min_distance) / BaseAgent.vision
+
+
+def coupling_value(agent):
+    return threat_ratio(agent.space, agent.pos, filter(t_matcher(type(agent)), agent.v_neighbors))
+
+
+def fear_value(agent):
+    return threat_ratio(agent.space, agent.pos, filter(t_matcher(WolfAgent), agent.v_neighbors))
+
+
+def hunger_value(agent):
+    return max(0, agent.max_energy - agent.energy)
 
 
 def colliding_decision(agent, neighbors):
@@ -171,7 +177,7 @@ def colliding_decision(agent, neighbors):
 
 
 def escaping(me, space):
-    return Flock(me, WolfAgent, space, match_w=0, coherence_w=0)
+    return Flock(me, space, match_w=0, coherence_w=0)
 
 
 def eating(me, food_type, space):
