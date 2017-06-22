@@ -23,11 +23,10 @@ class BaseAgent:
 
 
 class AutonomicAgent(BaseAgent, metaclass=ABCMeta):
-    def __init__(self, space, x, y, r, max_speed, max_energy=200):
+    def __init__(self, space, x, y, r, max_energy=200):
         super().__init__(space, x, y, r)
         self.max_energy = max_energy
         self.energy = self.max_energy
-        self.max_speed = max_speed
         self.heading = np.random.random(2)
 
         self.new_pos = self.pos
@@ -97,12 +96,13 @@ class GrassAgent(BaseAgent):
 
 
 class WolfAgent(AutonomicAgent):
-    def __init__(self, space, x, y, param, max_speed=0.03):
-        super().__init__(space, x, y, r=0.14, max_speed=max_speed)
+    def __init__(self, space, x, y, param):
+        super().__init__(space, x, y, r=0.14)
+        self.max_energy = 300
         self.strategy = self.make_strategy(space)
 
     def make_strategy(self, space):
-        hunger = Decision(hunger_value, 40, 0, eating(self, SheepAgent, space))
+        hunger = Decision(hunger_value, 40, 0, eating(self, SheepAgent, space), speed=0.06, cost=4)
         coupling = Decision(coupling_value, 200, 0, Flock(self, space))
 
         return WeighedRandom([hunger, coupling])
@@ -119,13 +119,13 @@ class WolfAgent(AutonomicAgent):
 
 
 class SheepAgent(AutonomicAgent):
-    def __init__(self, space, x, y, param, max_speed=0.03):
-        super().__init__(space, x, y, r=0.1, max_speed=max_speed)
+    def __init__(self, space, x, y, param):
+        super().__init__(space, x, y, r=0.1)
         self.strategy = self.make_strategy(space)
 
     def make_strategy(self, space):
         hunger = Decision(hunger_value, 5, 0, eating(self, GrassAgent, space))
-        fear = Decision(fear_value, 500, 0, escaping(self, space, aggressor_type=WolfAgent))
+        fear = Decision(fear_value, 500, 0, escaping(self, space, aggressor_type=WolfAgent), speed=0.06, cost=4)
         coupling = Decision(coupling_value, 200, 0, Flock(self, space))
 
         return WeighedRandom([hunger, fear, coupling])
