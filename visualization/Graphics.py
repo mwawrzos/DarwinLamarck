@@ -26,7 +26,7 @@ class VerySimpleCanvas(VisualizationElement):
             portrayal['x'] = x
             portrayal['y'] = y
             if isinstance(obj, AutonomicAgent):
-                vx, vy = obj.pos + obj.heading * obj.max_speed * 10
+                vx, vy = obj.pos + obj.heading * 0.03 * 10
                 vx, vy = vx/space_width, vy/space_width
                 v2x, v2y = obj.pos + obj.decision.target
                 v2x, v2y = v2x / space_width, v2y / space_width

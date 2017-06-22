@@ -12,8 +12,8 @@ from gen_model import SimulationModel
 X_MAX = 10
 Y_MAX = 10
 
-MAX_ITER = 500
-MAX_GEN = 3
+MAX_ITER = 700
+MAX_GEN = 20
 
 MAX_VALUE = 1000
 
@@ -24,7 +24,7 @@ WOLFS_COUNT = 10
 S_CXPB, S_MUTPB = 0.5, 0.1
 MUT_SIGMA = 10
 MUT_PB = 0.1
-TOUR_SIZE = 5
+TOUR_SIZE = 3
 
 common_tbx = base.Toolbox()
 s_toolbox = base.Toolbox()
@@ -33,6 +33,13 @@ w_toolbox = base.Toolbox()
 
 def foo(pop, name):
     return list(map(lambda ind: ind.fitness.values, pop[name]))
+
+
+def alive(pop):
+    def has_energy(ind):
+        return ind[1] > 0
+
+    return len(list(filter(has_energy, pop[0])))
 
 
 def eval_populations(*species):
@@ -45,7 +52,7 @@ def eval_populations(*species):
     return model.results()
 
 
-creator.create('FitnessMax', base.Fitness, weights=(1.0,))
+creator.create('FitnessMax', base.Fitness, weights=(1.0, 0.1))
 creator.create('Sheep', list, fitness=creator.FitnessMax)
 creator.create('Wolf', list, fitness=creator.FitnessMax)
 
@@ -56,10 +63,10 @@ common_tbx.register('mate', tools.cxTwoPoint)
 common_tbx.register('mutate', tools.mutGaussian, mu=0, sigma=MUT_SIGMA, indpb=MUT_PB)
 common_tbx.register('select', tools.selTournament, tournsize=TOUR_SIZE)
 
-s_toolbox.register('individual', tools.initRepeat, creator.Sheep, common_tbx.random, n=2)
+s_toolbox.register('individual', tools.initRepeat, creator.Sheep, common_tbx.random, n=7)
 s_toolbox.register('population', tools.initRepeat, list, s_toolbox.individual)
 
-w_toolbox.register('individual', tools.initRepeat, creator.Wolf, common_tbx.random, n=2)
+w_toolbox.register('individual', tools.initRepeat, creator.Wolf, common_tbx.random, n=5)
 w_toolbox.register('population', tools.initRepeat, list, w_toolbox.individual)
 
 s_stats = tools.Statistics(lambda pop: foo(pop, 'sheep'))
@@ -68,7 +75,9 @@ stats = tools.MultiStatistics(sheep=s_stats, wolfs=w_stats)
 stats.register('avg', np.average)
 stats.register('std', np.std)
 stats.register('min', np.min)
+stats.register('median', np.median)
 stats.register('max', np.max)
+stats.register('alive', alive)
 
 
 class GenState:
@@ -88,8 +97,8 @@ class GenState:
         self.w_hof = tools.HallOfFame(10)
         self.logbook = tools.Logbook()
         self.logbook.header = 'gen', 'sheep', 'wolfs'
-        self.logbook.chapters['sheep'].header = 'std', 'min', 'avg', 'max'
-        self.logbook.chapters['wolfs'].header = 'std', 'min', 'avg', 'max'
+        self.logbook.chapters['sheep'].header = 'std', 'min', 'median', 'avg', 'max', 'alive'
+        self.logbook.chapters['wolfs'].header = 'std', 'min', 'median', 'avg', 'max', 'alive'
         self.logbook.columns_len = [4, 28, 28]
 
     def load_state(self, checkpoint):
@@ -143,6 +152,8 @@ def main(checkpoint=None):
         state.log_population(g)
         state.checkpoint(g)
 
+    with open(os.path.join(state.directory, 'summary.txt'), 'w') as summary:
+        summary.write(str(state.logbook))
     print(state.s_hof)
     print(state.w_hof)
 

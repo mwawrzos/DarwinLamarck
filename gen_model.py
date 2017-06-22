@@ -58,7 +58,7 @@ class SimulationModel(Model):
 
     def results(self):
         def get_energy(individual):
-            return individual.energy,
+            return individual.eaten, individual.energy
 
         def get_energies(specie):
             return map(get_energy, specie)

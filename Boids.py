@@ -27,6 +27,7 @@ class AutonomicAgent(BaseAgent, metaclass=ABCMeta):
         super().__init__(space, x, y, r)
         self.max_energy = max_energy
         self.energy = self.max_energy
+        self.eaten = 0
         self.heading = np.random.random(2)
 
         self.new_pos = self.pos
@@ -84,6 +85,7 @@ class MarkerAgent(BaseAgent):
 class GrassAgent(BaseAgent):
     def __init__(self, space, x, y, param):
         super().__init__(space, x, y, r=0.06)
+        self.param = param
 
     def draw(self):
         return {'Color': 'green'}
@@ -98,12 +100,12 @@ class GrassAgent(BaseAgent):
 class WolfAgent(AutonomicAgent):
     def __init__(self, space, x, y, param):
         super().__init__(space, x, y, r=0.14)
-        self.max_energy = 300
-        self.strategy = self.make_strategy(space)
+        self.max_energy = 100
+        self.strategy = self.make_strategy(space, param)
 
-    def make_strategy(self, space):
-        hunger = Decision(hunger_value, 40, 0, eating(self, SheepAgent, space), speed=0.06, cost=4)
-        coupling = Decision(coupling_value, 200, 0, Flock(self, space))
+    def make_strategy(self, space, param):
+        hunger = make_wolf_hunger(self, space, *param[0:3])
+        coupling = make_coupling(self, space, *param[3:5])
 
         return WeighedRandom([hunger, coupling])
 
@@ -115,24 +117,26 @@ class WolfAgent(AutonomicAgent):
 
     def eat(self):
         for sheep in filter(t_matcher(SheepAgent), self.r_neighbors):
-            self.energy, sheep.energy = self.energy + sheep.energy, 0
+            self.energy, sheep.energy = self.energy + 400, 0
+            self.eaten += 1
 
 
 class SheepAgent(AutonomicAgent):
     def __init__(self, space, x, y, param):
         super().__init__(space, x, y, r=0.1)
-        self.strategy = self.make_strategy(space)
+        self.strategy = self.make_strategy(space, param)
 
-    def make_strategy(self, space):
-        hunger = Decision(hunger_value, 5, 0, eating(self, GrassAgent, space))
-        fear = Decision(fear_value, 500, 0, escaping(self, space, aggressor_type=WolfAgent), speed=0.06, cost=4)
-        coupling = Decision(coupling_value, 200, 0, Flock(self, space))
+    def make_strategy(self, space, param):
+        hunger = make_sheep_hunger(self, space, *param[0:2])
+        fear = make_fear(self, space, *param[2:5])
+        coupling = make_coupling(self, space, *param[5:7])
 
         return WeighedRandom([hunger, fear, coupling])
 
     def eat(self):
         if any(map(t_matcher(GrassAgent), self.r_neighbors)):
             self.energy += 10
+            self.eaten += 1
 
     def draw(self):
         return {'Color': 'blue', 'rs': BaseAgent.vision}
@@ -188,3 +192,38 @@ def eating(me, food_type, space):
         return vector2d(space)(me.pos, closest)
 
     return eating_
+
+
+def make_wolf_hunger(agent, space, hunger_a, hunger_b, hunger_speed):
+    hunger_speed /= 1000
+    hunger_speed_value = 0.03 + hunger_speed * 0.03
+    hunger_speed_cost = 1 + 3 * hunger_speed
+    hunger = Decision(hunger_value, hunger_a, hunger_b,
+                      eating(agent, SheepAgent, space),
+                      speed=hunger_speed_value,
+                      cost=hunger_speed_cost)
+    return hunger
+
+
+def make_sheep_hunger(agent, space, hunger_a, hunger_b):
+    hunger = Decision(hunger_value, hunger_a, hunger_b,
+                      eating(agent, GrassAgent, space))
+    return hunger
+
+
+def make_fear(agent, space, fear_a, fear_b, fear_speed):
+    fear_speed /= 1000
+    fear_speed_value = 0.03 + fear_speed * 0.03
+    fear_speed_cost = 1 + 3 * fear_speed
+    fear = Decision(fear_value, fear_a, fear_b,
+                    escaping(agent, space, aggressor_type=WolfAgent),
+                    speed=fear_speed_value,
+                    cost=fear_speed_cost)
+    return fear
+
+
+def make_coupling(agent, space, coupling_a, coupling_b):
+    return Decision(coupling_value,
+                    coupling_a,
+                    coupling_b,
+                    Flock(agent, space))
