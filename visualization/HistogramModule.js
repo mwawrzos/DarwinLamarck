@@ -1,3 +1,4 @@
+//noinspection JSUnusedGlobalSymbols
 /**
  * Created by marek on 28.04.2017.
  */
@@ -25,6 +26,7 @@ var HistogramModule = function(bins, canvas_width, canvas_height) {
     }];
 
     // Add a zero value for each bin
+    //noinspection JSUnusedLocalSymbols
     for (var _ in bins)
         datasets[0].data.push(0);
 
@@ -41,12 +43,15 @@ var HistogramModule = function(bins, canvas_width, canvas_height) {
     // Create the chart object
     var chart = new Chart(context).Bar(data, options);
 
+    //noinspection JSUnusedGlobalSymbols
     this.render = function (data) {
-        for (var i in data)
+        for (var i in data) { //noinspection JSUnfilteredForInLoop
             chart.datasets[0].bars[i].value = data[i];
+        }
         chart.update();
     };
 
+    //noinspection JSUnusedGlobalSymbols
     this.reset = function() {
         chart.destroy();
         chart = new Chart(context).Bar(data, options);

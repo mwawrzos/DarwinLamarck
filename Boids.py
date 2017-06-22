@@ -4,7 +4,7 @@ from abc import abstractmethod, ABCMeta
 import numpy as np
 
 from Flock import Flock, Separate
-from MathUtlis import norm, pos_vector, vector2d
+from MathUtlis import pos_vector, vector2d
 from Types import t_matcher
 from strategy import WeighedRandom, Decision
 
@@ -18,35 +18,34 @@ class BaseAgent:
         self.space = space
         self.pos = (x, y)
 
-        self.decision = -1
-        self.heading = None
-        self.max_speed = None
-        self.energy = 1
-        self.max_energy = 1
-
     def draw(self):
         pass
 
 
 class AutonomicAgent(BaseAgent, metaclass=ABCMeta):
-    def __init__(self, space, x, y, r, max_speed, heading=None):
+    def __init__(self, space, x, y, r, max_speed, max_energy=200):
         super().__init__(space, x, y, r)
-        self.max_energy = 200
+        self.max_energy = max_energy
         self.energy = self.max_energy
         self.max_speed = max_speed
-        self.heading = heading if heading else np.random.random(2)
+        self.heading = np.random.random(2)
 
         self.new_pos = self.pos
         self.new_heading = self.heading
         self.v_neighbors = []
         self.r_neighbors = []
+        self.decision = Decision(None, None, None, None)
 
     def step(self):
         self.v_neighbors = self.space.get_neighbors(self.pos, BaseAgent.vision, include_center=False)
-        self.update_heading(self.v_neighbors)
-        new_pos = np.array(self.pos) + self.heading * self.max_speed
-        (new_x, new_y) = new_pos
-        self.new_pos = self.space.torus_adj((new_x, new_y))
+        self.decision = self.make_decision()
+        self.heading = self.decision.update_heading(self.heading, self.v_neighbors)
+        new_pos = self.decision.update_position(self.pos, self.heading)
+        self.new_pos = self.space.torus_adj(new_pos)
+
+    @abstractmethod
+    def make_decision(self):
+        pass
 
     def advance(self):
         self.r_neighbors = list(filter(lambda x: 2 * self.r >= self.space.get_distance(x.pos, self.new_pos),
@@ -59,30 +58,19 @@ class AutonomicAgent(BaseAgent, metaclass=ABCMeta):
         neighbors = filter(lambda x: not t_matcher(GrassAgent)(x), self.r_neighbors)
         return not colliding_decision(self, neighbors) and self.energy > 0
 
-    def update_heading(self, neighbours):
-        # noinspection PyCallingNonCallable
-        self.new_heading = self.distributed_decision()(neighbours)
-        self.heading += norm(self.new_heading) * 0.3
-        self.heading = norm(self.heading)
-
-    @abstractmethod
-    def distributed_decision(self):
-        pass
+    def update_energy(self):
+        self.energy -= self.decision.cost
+        if self.energy < self.max_energy:
+            self.eat()
 
     @abstractmethod
     def eat(self):
         pass
 
-    def update_energy(self):
-        self.energy -= 1
-        if self.energy < self.max_energy:
-            self.eat()
-
 
 class MarkerAgent(BaseAgent):
     def __init__(self, space, x, y):
         super().__init__(space, x, y, r=0.02)
-        self.r = 0.02
 
     def draw(self):
         return {'Color': 'black'}
@@ -97,7 +85,6 @@ class MarkerAgent(BaseAgent):
 class GrassAgent(BaseAgent):
     def __init__(self, space, x, y, param):
         super().__init__(space, x, y, r=0.06)
-        self.r = 0.06
 
     def draw(self):
         return {'Color': 'green'}
@@ -110,8 +97,8 @@ class GrassAgent(BaseAgent):
 
 
 class WolfAgent(AutonomicAgent):
-    def __init__(self, space, x, y, param, max_speed=0.03, heading=None):
-        super().__init__(space, x, y, r=0.14, max_speed=max_speed, heading=heading)
+    def __init__(self, space, x, y, param, max_speed=0.03):
+        super().__init__(space, x, y, r=0.14, max_speed=max_speed)
         self.strategy = self.make_strategy(space)
 
     def make_strategy(self, space):
@@ -123,7 +110,7 @@ class WolfAgent(AutonomicAgent):
     def draw(self):
         return {'Color': 'red', 'rs': BaseAgent.vision}
 
-    def distributed_decision(self):
+    def make_decision(self):
         return self.strategy(self)
 
     def eat(self):
@@ -132,8 +119,8 @@ class WolfAgent(AutonomicAgent):
 
 
 class SheepAgent(AutonomicAgent):
-    def __init__(self, space, x, y, param, max_speed=0.03, heading=None):
-        super().__init__(space, x, y, r=0.1, max_speed=max_speed, heading=heading)
+    def __init__(self, space, x, y, param, max_speed=0.03):
+        super().__init__(space, x, y, r=0.1, max_speed=max_speed)
         self.strategy = self.make_strategy(space)
 
     def make_strategy(self, space):
@@ -150,10 +137,8 @@ class SheepAgent(AutonomicAgent):
     def draw(self):
         return {'Color': 'blue', 'rs': BaseAgent.vision}
 
-    def distributed_decision(self):
-        strategy = self.strategy(self)
-        self.decision = self.strategy.decision
-        return strategy
+    def make_decision(self):
+        return self.strategy(self)
 
 
 def threat_ratio(space, pos, neighbours):

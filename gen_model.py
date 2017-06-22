@@ -4,11 +4,15 @@ from mesa import Model
 from mesa.space import ContinuousSpace
 from mesa.time import SimultaneousActivation
 
+from Boids import AutonomicAgent
+from Types import t_matcher
+
 
 class SimulationModel(Model):
     def __init__(self, x_max, y_max, species, iterations):
         super().__init__()
 
+        self.starved = 0
         self.space = ContinuousSpace(x_max, y_max,
                                      grid_width=10, grid_height=10,
                                      torus=True)
@@ -45,11 +49,12 @@ class SimulationModel(Model):
             self.running = False
 
     def cleanup_corpses(self):
-        for agent in self.schedule.agents:
+        for agent in filter(t_matcher(AutonomicAgent), self.schedule.agents):
             if agent.energy <= 0:
                 self.schedule.remove(agent)
                 # noinspection PyProtectedMember
                 self.space._remove_agent(agent.pos, agent)
+                self.starved += 1
 
     def results(self):
         def get_energy(individual):

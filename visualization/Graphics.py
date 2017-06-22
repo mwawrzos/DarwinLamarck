@@ -4,7 +4,7 @@ from Boids import AutonomicAgent
 
 
 class VerySimpleCanvas(VisualizationElement):
-    local_includes = ['Graphics.js']
+    local_includes = ['visualization/Graphics.js']
 
     def __init__(self, portrayal_method, canvas_width=500, canvas_height=500):
         super().__init__()
@@ -28,7 +28,7 @@ class VerySimpleCanvas(VisualizationElement):
             if isinstance(obj, AutonomicAgent):
                 vx, vy = obj.pos + obj.heading * obj.max_speed * 10
                 vx, vy = vx/space_width, vy/space_width
-                v2x, v2y = obj.pos + obj.new_heading
+                v2x, v2y = obj.pos + obj.decision.target
                 v2x, v2y = v2x / space_width, v2y / space_width
             else:
                 vx, vy = x, y
