@@ -1,6 +1,9 @@
+import os
+import pickle
 import random
+from datetime import datetime
 
-import numpy
+import numpy as np
 from deap import base, tools, creator, algorithms
 
 import Boids
@@ -10,7 +13,7 @@ X_MAX = 10
 Y_MAX = 10
 
 MAX_ITER = 500
-MAX_GEN = 100
+MAX_GEN = 3
 
 MAX_VALUE = 1000
 
@@ -19,7 +22,7 @@ SHEEP_COUNT = 50
 WOLFS_COUNT = 10
 
 S_CXPB, S_MUTPB = 0.5, 0.1
-MUT_SIGMA = 0.1
+MUT_SIGMA = 10
 MUT_PB = 0.1
 TOUR_SIZE = 5
 
@@ -59,50 +62,89 @@ s_toolbox.register('population', tools.initRepeat, list, s_toolbox.individual)
 w_toolbox.register('individual', tools.initRepeat, creator.Wolf, common_tbx.random, n=2)
 w_toolbox.register('population', tools.initRepeat, list, w_toolbox.individual)
 
-s_hof = tools.HallOfFame(10)
-w_hof = tools.HallOfFame(10)
-
 s_stats = tools.Statistics(lambda pop: foo(pop, 'sheep'))
 w_stats = tools.Statistics(lambda pop: foo(pop, 'wolfs'))
 stats = tools.MultiStatistics(sheep=s_stats, wolfs=w_stats)
-stats.register('avg', numpy.average)
-stats.register('std', numpy.std)
-stats.register('min', numpy.min)
-stats.register('max', numpy.max)
-
-logbook = tools.Logbook()
-logbook.header = 'gen', 'sheep', 'wolfs'
-logbook.chapters['sheep'].header = 'std', 'min', 'avg', 'max'
-logbook.chapters['wolfs'].header = 'std', 'min', 'avg', 'max'
+stats.register('avg', np.average)
+stats.register('std', np.std)
+stats.register('min', np.min)
+stats.register('max', np.max)
 
 
-def main():
-    random.seed(64)
+class GenState:
+    def __init__(self, checkpoint):
+        self.directory = os.path.join('cp', str(datetime.now().strftime('%y%b%d%H%M%S')))
+        os.makedirs(self.directory)
+        self.sheep, self.wolfs, self.s_hof, self.w_hof, self.logbook = (None,) * 5
+        if checkpoint:
+            self.load_state(checkpoint)
+        else:
+            self.new_state()
 
-    sheep = s_toolbox.population(n=SHEEP_COUNT)
-    wolfs = w_toolbox.population(n=WOLFS_COUNT)
+    def new_state(self):
+        self.sheep = s_toolbox.population(n=SHEEP_COUNT)
+        self.wolfs = w_toolbox.population(n=WOLFS_COUNT)
+        self.s_hof = tools.HallOfFame(10)
+        self.w_hof = tools.HallOfFame(10)
+        self.logbook = tools.Logbook()
+        self.logbook.header = 'gen', 'sheep', 'wolfs'
+        self.logbook.chapters['sheep'].header = 'std', 'min', 'avg', 'max'
+        self.logbook.chapters['wolfs'].header = 'std', 'min', 'avg', 'max'
+        self.logbook.columns_len = [4, 28, 28]
 
-    evaluate_population(sheep, wolfs)
+    def load_state(self, checkpoint):
+        with open(checkpoint, 'rb') as cp_file:
+            cp = pickle.load(cp_file)
+        self.sheep = cp['sheep']
+        self.wolfs = cp['wolfs']
+        self.s_hof = cp['s_hof']
+        self.w_hof = cp['w_hof']
+        self.logbook = cp['logbook']
+        random.setstate(cp['random'])
+        np.random.set_state(cp['np_random'])
 
-    log_population(0, sheep, wolfs)
+    def checkpoint(self, gen):
+        path = os.path.join(self.directory, '%03i.pkl' % gen)
+        cp = {
+            'sheep': self.sheep,
+            'wolfs': self.wolfs,
+            's_hof': self.s_hof,
+            'w_hof': self.w_hof,
+            'logbook': self.logbook,
+            'random': random.getstate(),
+            'np_random': np.random.get_state()
+        }
+        with open(path, mode='wb') as cp_file:
+            pickle.dump(cp, cp_file)
+
+    def log_population(self, gen):
+        self.s_hof.update(self.sheep)
+        self.w_hof.update(self.wolfs)
+        self.logbook.record(gen=gen, **stats.compile([{'sheep': self.sheep, 'wolfs': self.wolfs}]))
+        print(self.logbook.stream)
+
+
+def main(checkpoint=None):
+    state = GenState(checkpoint)
+
+    evaluate_population(state.sheep, state.wolfs)
+    state.log_population(0)
+    state.checkpoint(0)
 
     for g in range(1, MAX_GEN):
-        sheep = common_tbx.select(sheep, len(sheep))
-        wolfs = common_tbx.select(wolfs, len(wolfs))
+        state.sheep = common_tbx.select(state.sheep, len(state.sheep))
+        state.wolfs = common_tbx.select(state.wolfs, len(state.wolfs))
 
-        sheep = algorithms.varAnd(sheep, common_tbx, S_CXPB, S_MUTPB)
-        wolfs = algorithms.varAnd(wolfs, common_tbx, S_CXPB, S_MUTPB)
+        state.sheep = algorithms.varAnd(state.sheep, common_tbx, S_CXPB, S_MUTPB)
+        state.wolfs = algorithms.varAnd(state.wolfs, common_tbx, S_CXPB, S_MUTPB)
 
-        evaluate_population(sheep, wolfs)
+        evaluate_population(state.sheep, state.wolfs)
 
-        log_population(g, sheep, wolfs)
+        state.log_population(g)
+        state.checkpoint(g)
 
-
-def log_population(gen, sheep, wolfs):
-    s_hof.update(sheep)
-    w_hof.update(wolfs)
-    logbook.record(gen=gen, **stats.compile([{'sheep': sheep, 'wolfs': wolfs}]))
-    print(logbook.stream)
+    print(state.s_hof)
+    print(state.w_hof)
 
 
 def evaluate_population(sheep, wolfs):
