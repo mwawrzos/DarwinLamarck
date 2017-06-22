@@ -112,15 +112,19 @@ class GrassAgent(BaseAgent):
 class WolfAgent(AutonomicAgent):
     def __init__(self, space, x, y, param, max_speed=0.03, heading=None):
         super().__init__(space, x, y, r=0.14, max_speed=max_speed, heading=heading)
-        self.asd = [i for (i, c) in enumerate([1, 1]) for _ in range(c)]
-        self.decisions = [Flock(self, space), eating(self, SheepAgent, space)]
+        self.strategy = self.make_strategy(space)
+
+    def make_strategy(self, space):
+        hunger = Decision(hunger_value, 40, 0, eating(self, SheepAgent, space))
+        coupling = Decision(coupling_value, 200, 0, Flock(self, space))
+
+        return WeighedRandom([hunger, coupling])
 
     def draw(self):
         return {'Color': 'red', 'rs': BaseAgent.vision}
 
     def distributed_decision(self):
-        self.decision = np.random.choice(self.asd)
-        return self.decisions[self.decision]
+        return self.strategy(self)
 
     def eat(self):
         for sheep in filter(t_matcher(SheepAgent), self.r_neighbors):
@@ -128,8 +132,6 @@ class WolfAgent(AutonomicAgent):
 
 
 class SheepAgent(AutonomicAgent):
-    starved = 0
-
     def __init__(self, space, x, y, param, max_speed=0.03, heading=None):
         super().__init__(space, x, y, r=0.1, max_speed=max_speed, heading=heading)
         self.strategy = self.make_strategy(space)
