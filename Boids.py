@@ -100,13 +100,13 @@ class WolfAgent(AutonomicAgent):
     def __init__(self, space, x, y, lamarck, param):
         super(WolfAgent, self).__init__(space, x, y, r=0.14)
         self.max_energy = 100
-        self.strategy = self.make_strategy(space, param)
+        self.strategy = self.make_strategy(space, lamarck, param)
 
-    def make_strategy(self, space, param):
+    def make_strategy(self, space, lamarck, param):
         hunger = make_wolf_hunger(self, space, *param[0:3])
         coupling = make_coupling(self, space, *param[3:5])
 
-        return WeighedRandom([hunger, coupling])
+        return WeighedRandom(lamarck, [hunger, coupling])
 
     def draw(self):
         return {'Color': 'red', 'rs': BaseAgent.vision}
@@ -123,14 +123,14 @@ class WolfAgent(AutonomicAgent):
 class SheepAgent(AutonomicAgent):
     def __init__(self, space, x, y, lamarck, param):
         super(SheepAgent, self).__init__(space, x, y, r=0.1)
-        self.strategy = self.make_strategy(space, param)
+        self.strategy = self.make_strategy(space, lamarck, param)
 
-    def make_strategy(self, space, param):
+    def make_strategy(self, space, lamarck, param):
         hunger = make_sheep_hunger(self, space, *param[0:2])
         fear = make_fear(self, space, *param[2:5])
         coupling = make_coupling(self, space, *param[5:7])
 
-        return WeighedRandom([hunger, fear, coupling])
+        return WeighedRandom(lamarck, [hunger, fear, coupling])
 
     def eat(self):
         if any(map(t_matcher(GrassAgent), self.r_neighbors)):

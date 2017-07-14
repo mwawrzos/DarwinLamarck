@@ -12,7 +12,7 @@ histogram = HistogramModule(list(range(4)), 200, 500, lambda sheep: sheep.strate
 histogram2 = HistogramModule(list(range(1, 202)), 200, 500, lambda sheep: sheep.energy)
 
 grass_agent = GrassAgent, False, [[]] * 100
-sheep_agent = SheepAgent, True, [[5, 0, 500, 500, 0, 200, 0]] * 50
+sheep_agent = SheepAgent, None, [[5, 0, 500, 500, 0, 200, 0]] * 50
 wolf_agent = WolfAgent, False, [[40, 0, 500, 200, 20]] * 10
 server = ModularServer(SimulationModel,
                        [agent_canvas, histogram, histogram2, VerySimpleText()],

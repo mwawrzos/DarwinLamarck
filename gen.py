@@ -4,10 +4,11 @@ import random
 from datetime import datetime
 
 import numpy as np
-from deap import base, tools, creator, algorithms
+from deap import base, tools, creator
 
 import Boids
 from gen_model import SimulationModel
+from lamarck import Lamarck
 
 X_MAX = 10
 Y_MAX = 10
@@ -26,8 +27,9 @@ MUT_SIGMA = 10
 MUT_PB = 0.1
 TOUR_SIZE = 3
 
-SHEEP_LAMARCK = True
-WOLFS_LAMARCK = True
+LAMARCK = Lamarck(1, 1)
+SHEEP_LAMARCK = LAMARCK
+WOLFS_LAMARCK = LAMARCK
 
 common_tbx = base.Toolbox()
 s_toolbox = base.Toolbox()
@@ -147,8 +149,8 @@ def main(checkpoint=None):
         state.sheep = common_tbx.select(state.sheep, len(state.sheep))
         state.wolfs = common_tbx.select(state.wolfs, len(state.wolfs))
 
-        state.sheep = algorithms.varAnd(state.sheep, common_tbx, S_CXPB, S_MUTPB)
-        state.wolfs = algorithms.varAnd(state.wolfs, common_tbx, S_CXPB, S_MUTPB)
+        # state.sheep = algorithms.varAnd(state.sheep, common_tbx, S_CXPB, S_MUTPB)
+        # state.wolfs = algorithms.varAnd(state.wolfs, common_tbx, S_CXPB, S_MUTPB)
 
         evaluate_population(state.sheep, state.wolfs)
 

@@ -20,7 +20,7 @@ class Decision(object):
         return self.value_func(*args, **kwargs) * self.a + self.b
 
     def __call__(self, *args, **kwargs):
-        return self.decision(*args, *kwargs)
+        return self.decision(*args, **kwargs)
 
     def update_heading(self, heading, *args, **kwargs):
         self.target = self.decision(*args, **kwargs)
@@ -32,7 +32,8 @@ class Decision(object):
 
 
 class WeighedRandom:
-    def __init__(self, decisions):
+    def __init__(self, lamarck, decisions):
+        self.lamarck = lamarck
         self.decisions = decisions
         self.decision = 0
 
@@ -45,4 +46,8 @@ class WeighedRandom:
         decision = np.random.randint(last_value + 1)
 
         self.decision = bisect_left(decisions, decision)
+
+        if self.lamarck:
+            self.lamarck.mut(self.decisions, self.decision)
+
         return self.decisions[self.decision]
