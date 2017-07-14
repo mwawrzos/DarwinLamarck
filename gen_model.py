@@ -10,7 +10,7 @@ from Types import t_matcher
 
 class SimulationModel(Model):
     def __init__(self, x_max, y_max, species, iterations):
-        super().__init__()
+        super(SimulationModel, self).__init__()
 
         self.starved = 0
         self.space = ContinuousSpace(x_max, y_max,

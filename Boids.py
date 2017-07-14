@@ -1,5 +1,5 @@
 import itertools
-from abc import abstractmethod, ABCMeta
+from abc import abstractmethod
 
 import numpy as np
 
@@ -13,7 +13,6 @@ class BaseAgent:
     vision = 2
 
     def __init__(self, space, x, y, r):
-        super().__init__()
         self.r = r
         self.space = space
         self.pos = (x, y)
@@ -22,9 +21,9 @@ class BaseAgent:
         pass
 
 
-class AutonomicAgent(BaseAgent, metaclass=ABCMeta):
+class AutonomicAgent(BaseAgent):
     def __init__(self, space, x, y, r, max_energy=200):
-        super().__init__(space, x, y, r)
+        super(AutonomicAgent, self).__init__(space, x, y, r)
         self.max_energy = max_energy
         self.energy = self.max_energy
         self.eaten = 0
@@ -70,7 +69,7 @@ class AutonomicAgent(BaseAgent, metaclass=ABCMeta):
 
 class MarkerAgent(BaseAgent):
     def __init__(self, space, x, y):
-        super().__init__(space, x, y, r=0.02)
+        super(MarkerAgent, self).__init__(space, x, y, r=0.02)
 
     def draw(self):
         return {'Color': 'black'}
@@ -84,7 +83,7 @@ class MarkerAgent(BaseAgent):
 
 class GrassAgent(BaseAgent):
     def __init__(self, space, x, y, param):
-        super().__init__(space, x, y, r=0.06)
+        super(GrassAgent, self).__init__(space, x, y, r=0.06)
         self.param = param
 
     def draw(self):
@@ -99,7 +98,7 @@ class GrassAgent(BaseAgent):
 
 class WolfAgent(AutonomicAgent):
     def __init__(self, space, x, y, param):
-        super().__init__(space, x, y, r=0.14)
+        super(WolfAgent, self).__init__(space, x, y, r=0.14)
         self.max_energy = 100
         self.strategy = self.make_strategy(space, param)
 
@@ -123,7 +122,7 @@ class WolfAgent(AutonomicAgent):
 
 class SheepAgent(AutonomicAgent):
     def __init__(self, space, x, y, param):
-        super().__init__(space, x, y, r=0.1)
+        super(SheepAgent, self).__init__(space, x, y, r=0.1)
         self.strategy = self.make_strategy(space, param)
 
     def make_strategy(self, space, param):
