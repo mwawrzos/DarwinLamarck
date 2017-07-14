@@ -20,7 +20,7 @@ class Decision(object):
         return self.value_func(*args, **kwargs) * self.a + self.b
 
     def __call__(self, *args, **kwargs):
-        return self.decision(*args, *kwargs)
+        return self.decision(*args, **kwargs)
 
     def update_heading(self, heading, *args, **kwargs):
         self.target = self.decision(*args, **kwargs)

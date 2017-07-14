@@ -1,6 +1,7 @@
 import os
 import pickle
 import random
+import subprocess
 from datetime import datetime
 
 import numpy as np
@@ -22,6 +23,7 @@ SHEEP_COUNT = 50
 WOLFS_COUNT = 10
 
 S_CXPB, S_MUTPB = 0.5, 0.1
+W_CXPB, W_MUTPB = 0.5, 0.1
 MUT_SIGMA = 10
 MUT_PB = 0.1
 TOUR_SIZE = 3
@@ -148,7 +150,7 @@ def main(checkpoint=None):
         state.wolfs = common_tbx.select(state.wolfs, len(state.wolfs))
 
         state.sheep = algorithms.varAnd(state.sheep, common_tbx, S_CXPB, S_MUTPB)
-        state.wolfs = algorithms.varAnd(state.wolfs, common_tbx, S_CXPB, S_MUTPB)
+        state.wolfs = algorithms.varAnd(state.wolfs, common_tbx, W_CXPB, W_MUTPB)
 
         evaluate_population(state.sheep, state.wolfs)
 
@@ -157,8 +159,21 @@ def main(checkpoint=None):
 
     with open(os.path.join(state.directory, 'summary.txt'), 'w') as summary:
         summary.write(str(state.logbook))
+        summary.write('\nPlansza:     %dx%d' % (X_MAX, Y_MAX))
+        summary.write('\nSymulacja:   %dx%d' % (MAX_GEN, MAX_ITER))
+        summary.write('\nPolulacja:   %d trawy, %d owiec, %d wilków' % (GRASS_COUNT, SHEEP_COUNT, WOLFS_COUNT))
+        summary.write('\nEwolucja o:  cx(%f), mut(%f)' % (S_CXPB, S_MUTPB))
+        summary.write('\nEwolucja w:  cx(%f), mut(%f)' % (W_CXPB, W_MUTPB))
+        summary.write('\nMutacja:     sigma=%d, p(%f)' % (MUT_SIGMA, MUT_PB))
+        summary.write('\nKrzyżowanie: turniej=%d' % TOUR_SIZE)
+        summary.write('\nLimit rand:  %d' % MAX_VALUE)
+        summary.write('\nWersja:      %s' % get_git_sha())
     print(state.s_hof)
     print(state.w_hof)
+
+
+def get_git_sha():
+    return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
 
 
 def evaluate_population(sheep, wolfs):
