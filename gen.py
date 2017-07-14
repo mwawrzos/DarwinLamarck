@@ -26,6 +26,9 @@ MUT_SIGMA = 10
 MUT_PB = 0.1
 TOUR_SIZE = 3
 
+SHEEP_LAMARCK = True
+WOLFS_LAMARCK = True
+
 common_tbx = base.Toolbox()
 s_toolbox = base.Toolbox()
 w_toolbox = base.Toolbox()
@@ -44,9 +47,9 @@ def alive(pop):
 
 def eval_populations(*species):
     sheep_par, wolf_par = species
-    species = [(Boids.SheepAgent, sheep_par),
-               (Boids.WolfAgent, wolf_par),
-               (Boids.GrassAgent, [()] * GRASS_COUNT)]
+    species = [(Boids.SheepAgent, SHEEP_LAMARCK, sheep_par),
+               (Boids.WolfAgent, WOLFS_LAMARCK, wolf_par),
+               (Boids.GrassAgent, False, [()] * GRASS_COUNT)]
     model = SimulationModel(X_MAX, Y_MAX, species, MAX_ITER)
     model.run_model()
     return model.results()

@@ -24,17 +24,17 @@ class SimulationModel(Model):
         self.create_population(species)
 
     def create_population(self, species):
-        for specie, params in species:
+        for specie, lamarck, params in species:
             individuals = []
             for param in params:
-                individuals.append(self.create_individual(specie, param))
+                individuals.append(self.create_individual(specie, lamarck, param))
                 self.schedule.add(individuals[-1])
             self.species.append(individuals)
 
-    def create_individual(self, specie, param):
+    def create_individual(self, specie, lamarck, param):
         x = random.random() * self.space.x_max
         y = random.random() * self.space.y_max
-        ind = specie(self.space, x, y, param)
+        ind = specie(self.space, x, y, lamarck, param)
         self.space.place_agent(ind, ind.pos)
         return ind
 

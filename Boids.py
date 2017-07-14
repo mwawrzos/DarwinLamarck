@@ -82,7 +82,7 @@ class MarkerAgent(BaseAgent):
 
 
 class GrassAgent(BaseAgent):
-    def __init__(self, space, x, y, param):
+    def __init__(self, space, x, y, lamarck, param):
         super(GrassAgent, self).__init__(space, x, y, r=0.06)
         self.param = param
 
@@ -97,7 +97,7 @@ class GrassAgent(BaseAgent):
 
 
 class WolfAgent(AutonomicAgent):
-    def __init__(self, space, x, y, param):
+    def __init__(self, space, x, y, lamarck, param):
         super(WolfAgent, self).__init__(space, x, y, r=0.14)
         self.max_energy = 100
         self.strategy = self.make_strategy(space, param)
@@ -121,7 +121,7 @@ class WolfAgent(AutonomicAgent):
 
 
 class SheepAgent(AutonomicAgent):
-    def __init__(self, space, x, y, param):
+    def __init__(self, space, x, y, lamarck, param):
         super(SheepAgent, self).__init__(space, x, y, r=0.1)
         self.strategy = self.make_strategy(space, param)
 
