@@ -6,15 +6,20 @@ from MathUtlis import norm
 
 
 class Decision(object):
-    def __init__(self, value_func, a, b, decision, speed=0.03, cost=1, inertia=0.3) -> None:
+    def __init__(self, value_func, a, b, decision, speed_weight=0, inertia=0.3) -> None:
         self.value_func = value_func
         self.a = a
         self.b = b
         self.decision = decision
-        self.speed = speed
-        self.inertia = inertia
-        self.cost = cost
         self.target = np.array([0, 0])
+        self.inertia = inertia
+        self.speed_weight = speed_weight
+        self.speed, self.cost = None, None
+        self.update_speed()
+
+    def update_speed(self):
+        self.speed = 0.03 + self.speed_weight / 1000 * 0.03
+        self.cost = 1 + self.speed_weight / 1000 * 3
 
     def value(self, *args, **kwargs):
         return self.value_func(*args, **kwargs) * self.a + self.b
