@@ -194,13 +194,9 @@ def eating(me, food_type, space):
 
 
 def make_wolf_hunger(agent, space, hunger_a, hunger_b, hunger_speed):
-    hunger_speed /= 1000
-    hunger_speed_value = 0.03 + hunger_speed * 0.03
-    hunger_speed_cost = 1 + 3 * hunger_speed
     hunger = Decision(hunger_value, hunger_a, hunger_b,
                       eating(agent, SheepAgent, space),
-                      speed=hunger_speed_value,
-                      cost=hunger_speed_cost)
+                      speed_weight=hunger_speed)
     return hunger
 
 
@@ -211,13 +207,9 @@ def make_sheep_hunger(agent, space, hunger_a, hunger_b):
 
 
 def make_fear(agent, space, fear_a, fear_b, fear_speed):
-    fear_speed /= 1000
-    fear_speed_value = 0.03 + fear_speed * 0.03
-    fear_speed_cost = 1 + 3 * fear_speed
     fear = Decision(fear_value, fear_a, fear_b,
                     escaping(agent, space, aggressor_type=WolfAgent),
-                    speed=fear_speed_value,
-                    cost=fear_speed_cost)
+                    speed_weight=fear_speed)
     return fear
 
 
