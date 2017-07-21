@@ -23,8 +23,10 @@ GRASS_COUNT = 100
 SHEEP_COUNT = 50
 WOLFS_COUNT = 10
 
-S_CXPB, S_MUTPB = 0.5, 0.1
-W_CXPB, W_MUTPB = 0.5, 0.1
+# S_CXPB, S_MUTPB = 0.5, 0.1
+# W_CXPB, W_MUTPB = 0.5, 0.1
+S_CXPB, S_MUTPB = 0, 0
+W_CXPB, W_MUTPB = 0, 0
 MUT_SIGMA = 10
 MUT_PB = 0.1
 TOUR_SIZE = 3
@@ -151,8 +153,8 @@ def main(checkpoint=None):
         state.sheep = common_tbx.select(state.sheep, len(state.sheep))
         state.wolfs = common_tbx.select(state.wolfs, len(state.wolfs))
 
-        # state.sheep = algorithms.varAnd(state.sheep, common_tbx, S_CXPB, S_MUTPB)
-        # state.wolfs = algorithms.varAnd(state.wolfs, common_tbx, W_CXPB, W_MUTPB)
+        state.sheep = algorithms.varAnd(state.sheep, common_tbx, S_CXPB, S_MUTPB)
+        state.wolfs = algorithms.varAnd(state.wolfs, common_tbx, W_CXPB, W_MUTPB)
 
         evaluate_population(state.sheep, state.wolfs)
 
