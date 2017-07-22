@@ -5,6 +5,10 @@ import numpy as np
 from MathUtlis import norm
 
 
+def limited(val):
+    return max(0, min(1000, val))
+
+
 class Decision(object):
     def __init__(self, value_func, a, b, decision, speed_weight=0, inertia=0.3) -> None:
         self.value_func = value_func
@@ -14,7 +18,7 @@ class Decision(object):
         self.target = np.array([0, 0])
         self.inertia = inertia
         self.speed_weight = speed_weight
-        self.speed, self.cost = None, None
+        self.speed, self.cost = 0.03, 1
         self.update_speed()
 
     def update_speed(self):
@@ -34,6 +38,17 @@ class Decision(object):
     def update_position(self, pos, heading):
         new_x, new_y = np.array(pos) + heading * self.speed
         return new_x, new_y
+
+    def lamarck_mutation(self, value):
+        last = 3 if self.speed_weight else 2
+        i = np.random.randint(last)
+        if i == 0:
+            self.a = limited(self.a + value)
+        elif i == 1:
+            self.b = limited(self.b + value)
+        else:
+            self.speed_weight = limited(self.speed_weight + value)
+            self.update_speed()
 
 
 class WeighedRandom:
