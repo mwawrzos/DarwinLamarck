@@ -17,9 +17,9 @@ wolf_agent = WolfAgent, False, [[40, 0, 500, 200, 20]] * 10
 server = ModularServer(SimulationModel,
                        [agent_canvas, histogram, histogram2, VerySimpleText()],
                        "Simulation",
-                       x_max=10,
-                       y_max=10,
-                       species=[grass_agent, sheep_agent, wolf_agent],
-                       iterations=2000)
+                       {'x_max': 10,
+                        'y_max': 10,
+                        'species': [grass_agent, sheep_agent, wolf_agent],
+                        'iterations': 2000})
 if __name__ == '__main__':
     server.launch()
