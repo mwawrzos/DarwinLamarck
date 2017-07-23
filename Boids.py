@@ -119,6 +119,10 @@ class WolfAgent(AutonomicAgent):
             self.energy, sheep.energy = self.energy + 400, 0
             self.eaten += 1
 
+    def get_params(self):
+        d = self.strategy.decisions
+        return [d[0].a, d[0].b, d[0].speed_weight, d[1].a, d[1].b]
+
 
 class SheepAgent(AutonomicAgent):
     def __init__(self, space, x, y, lamarck, param):
@@ -142,6 +146,10 @@ class SheepAgent(AutonomicAgent):
 
     def make_decision(self):
         return self.strategy(self)
+
+    def get_params(self):
+        d = self.strategy.decisions
+        return [d[0].a, d[0].b, d[1].a, d[1].b, d[1].speed_weight, d[2].a, d[2].b]
 
 
 def threat_ratio(space, pos, neighbours):

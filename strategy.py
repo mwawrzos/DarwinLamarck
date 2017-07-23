@@ -6,7 +6,7 @@ from MathUtlis import norm
 
 
 def limited(val):
-    return max(0, min(1000, val))
+    return max(50, min(1000, val))
 
 
 class Decision(object):

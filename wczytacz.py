@@ -1,7 +1,7 @@
 from gen import GenState
 from visualization.VizualizationServer import *
 
-s = GenState(r'cp\lamarck\019.pkl')
+s = GenState(r'cp\lamarck4\019.pkl')
 wolf_agent = WolfAgent, None, s.wolfs
 sheep_agent = SheepAgent, None, s.sheep
 server = ModularServer(SimulationModel,

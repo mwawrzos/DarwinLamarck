@@ -23,17 +23,17 @@ GRASS_COUNT = 100
 SHEEP_COUNT = 50
 WOLFS_COUNT = 10
 
-# S_CXPB, S_MUTPB = 0.5, 0.1
-# W_CXPB, W_MUTPB = 0.5, 0.1
-S_CXPB, S_MUTPB = 0, 0
-W_CXPB, W_MUTPB = 0, 0
+S_CXPB, S_MUTPB = 0.5, 0.1
+W_CXPB, W_MUTPB = 0.5, 0.1
+# S_CXPB, S_MUTPB = 0, 0
+# W_CXPB, W_MUTPB = 0, 0
+
 MUT_SIGMA = 10
 MUT_PB = 0.1
 TOUR_SIZE = 3
 
-LAMARCK = Lamarck(1, 1)
-SHEEP_LAMARCK = LAMARCK
-WOLFS_LAMARCK = LAMARCK
+SHEEP_LAMARCK = Lamarck(1, 1, S_MUTPB)
+WOLFS_LAMARCK = Lamarck(1, 1, W_MUTPB)
 
 common_tbx = base.Toolbox()
 s_toolbox = base.Toolbox()
@@ -51,6 +51,10 @@ def alive(pop):
     return len(list(filter(has_energy, pop[0])))
 
 
+def asd(specie):
+    return [ind.get_params() for ind in specie]
+
+
 def eval_populations(*species):
     sheep_par, wolf_par = species
     species = [(Boids.SheepAgent, SHEEP_LAMARCK, sheep_par),
@@ -58,7 +62,7 @@ def eval_populations(*species):
                (Boids.GrassAgent, False, [()] * GRASS_COUNT)]
     model = SimulationModel(X_MAX, Y_MAX, species, MAX_ITER)
     model.run_model()
-    return model.results()
+    return model.results(), (asd(model.species[0]), asd(model.species[1]))
 
 
 creator.create('FitnessMax', base.Fitness, weights=(1.0, 0.1))
@@ -153,8 +157,8 @@ def main(checkpoint=None):
         state.sheep = common_tbx.select(state.sheep, len(state.sheep))
         state.wolfs = common_tbx.select(state.wolfs, len(state.wolfs))
 
-        state.sheep = algorithms.varAnd(state.sheep, common_tbx, S_CXPB, S_MUTPB)
-        state.wolfs = algorithms.varAnd(state.wolfs, common_tbx, W_CXPB, W_MUTPB)
+        state.sheep = algorithms.varAnd(state.sheep, common_tbx, S_CXPB, 0 if SHEEP_LAMARCK else S_MUTPB)
+        state.wolfs = algorithms.varAnd(state.wolfs, common_tbx, W_CXPB, 0 if WOLFS_LAMARCK else W_MUTPB)
 
         evaluate_population(state.sheep, state.wolfs)
 
@@ -166,6 +170,8 @@ def main(checkpoint=None):
         summary.write('\nPlansza:     %dx%d' % (X_MAX, Y_MAX))
         summary.write('\nSymulacja:   %dx%d' % (MAX_GEN, MAX_ITER))
         summary.write('\nPolulacja:   %d trawy, %d owiec, %d wilków' % (GRASS_COUNT, SHEEP_COUNT, WOLFS_COUNT))
+        summary.write('\nEwolucja o: %s' % 'Lamarck' if SHEEP_LAMARCK else 'Darwin')
+        summary.write('\nEwolucja w: %s' % 'Lamarck' if WOLFS_LAMARCK else 'Darwin')
         summary.write('\nEwolucja o:  cx(%f), mut(%f)' % (S_CXPB, S_MUTPB))
         summary.write('\nEwolucja w:  cx(%f), mut(%f)' % (W_CXPB, W_MUTPB))
         summary.write('\nMutacja:     sigma=%d, p(%f)' % (MUT_SIGMA, MUT_PB))
@@ -181,11 +187,18 @@ def get_git_sha():
 
 
 def evaluate_population(sheep, wolfs):
-    results = list(common_tbx.evaluate(sheep, wolfs))
+    results, (sp, wp) = common_tbx.evaluate(sheep, wolfs)
+    results = list(results)
     for s, res in zip(sheep, results[0]):
         s.fitness.values = res
     for wolf, res in zip(wolfs, results[1]):
         wolf.fitness.values = res
+    for i in range(len(sheep)):
+        for j in range(len(sheep[i])):
+            sheep[i][j] = sp[i][j]
+    for i in range(len(wolfs)):
+        for j in range(len(wolfs[i])):
+            wolfs[i][j] = wp[i][j]
 
 
 if __name__ == '__main__':
