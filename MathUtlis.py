@@ -3,10 +3,6 @@ from math import sqrt
 import numpy as np
 
 
-def pos_vector(self):
-    return np.array(self.pos)
-
-
 def vector_from(agent):
     return lambda neighbour: agent - neighbour
 

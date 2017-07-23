@@ -2,7 +2,7 @@ import itertools
 
 import numpy as np
 
-from MathUtlis import norm, pos_vector, v_len, vector2d
+from MathUtlis import norm, v_len, vector2d
 from Types import t_matcher
 
 
@@ -28,7 +28,7 @@ class Flock:
 
 
 def cohere(agent, space, neighbours):
-    i = map(vector2d(space), itertools.repeat(agent.pos), map(pos_vector, neighbours))
+    i = map(vector2d(space), itertools.repeat(agent.pos), [n.pos for n in neighbours])
     neighbours_vector = sum(i, np.array([0, 0]))
     return norm(neighbours_vector)
 
@@ -40,7 +40,7 @@ class Separate:
         self.space = space
 
     def __call__(self, neighbours):
-        close_neighbours = filter(self.close_enough, map(pos_vector, neighbours))
+        close_neighbours = filter(self.close_enough, [n.pos for n in neighbours])
         neighbours_vectors = map(vector2d(self.space),
                                  close_neighbours,
                                  itertools.repeat(self.agent.pos))

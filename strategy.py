@@ -36,8 +36,7 @@ class Decision(object):
         return norm(norm(self.target) * self.inertia + heading)
 
     def update_position(self, pos, heading):
-        new_x, new_y = np.array(pos) + heading * self.speed
-        return new_x, new_y
+        return pos + heading * self.speed
 
     def lamarck_mutation(self, value):
         last = 3 if self.speed_weight else 2

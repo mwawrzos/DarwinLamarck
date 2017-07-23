@@ -4,7 +4,7 @@ from abc import abstractmethod
 import numpy as np
 
 from Flock import Flock, Separate
-from MathUtlis import pos_vector, vector2d
+from MathUtlis import vector2d
 from Types import t_matcher
 from strategy import WeighedRandom, Decision
 
@@ -15,7 +15,7 @@ class BaseAgent:
     def __init__(self, space, x, y, r):
         self.r = r
         self.space = space
-        self.pos = (x, y)
+        self.pos = np.array((x, y))
 
     def draw(self):
         pass
@@ -169,7 +169,7 @@ class SheepAgent(AutonomicAgent):
 def threat_ratio(space, pos, neighbours):
     distances = map(space.get_distance,
                     itertools.repeat(pos),
-                    map(pos_vector, neighbours))
+                    [n.pos for n in neighbours])
     min_distance = min(distances, default=BaseAgent.vision)
     return (BaseAgent.vision - min_distance) / BaseAgent.vision
 
@@ -207,7 +207,7 @@ def eating(me, food_type, space):
 
     def eating_(neighbours):
         neighbours = list(filter(t_matcher(food_type), neighbours))
-        closest = min(map(pos_vector, neighbours),
+        closest = min([n.pos for n in neighbours],
                       key=distance_to_me,
                       default=me.pos)
         return vector2d(space)(me.pos, closest)
