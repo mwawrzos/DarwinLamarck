@@ -9,31 +9,32 @@ from deap import base, tools, creator, algorithms
 
 import Boids
 from gen_model import SimulationModel
-from lamarck import Lamarck
 
 X_MAX = 10
 Y_MAX = 10
 
 MAX_ITER = 700
-MAX_GEN = 20
+MAX_GEN = 40
 
 MAX_VALUE = 1000
 
-GRASS_COUNT = 100
+GRASS_COUNT = 75
 SHEEP_COUNT = 50
 WOLFS_COUNT = 10
 
-S_CXPB, S_MUTPB = 0.5, 0.1
-W_CXPB, W_MUTPB = 0.5, 0.1
-# S_CXPB, S_MUTPB = 0, 0
-# W_CXPB, W_MUTPB = 0, 0
+# S_CXPB, S_MUTPB = 0.5, 0.1
+# W_CXPB, W_MUTPB = 0.5, 0.1
+S_CXPB, S_MUTPB = 0, 0
+W_CXPB, W_MUTPB = 0, 0
 
 MUT_SIGMA = 10
 MUT_PB = 0.1
 TOUR_SIZE = 3
 
-SHEEP_LAMARCK = Lamarck(1, 1, S_MUTPB)
-WOLFS_LAMARCK = Lamarck(1, 1, W_MUTPB)
+# SHEEP_LAMARCK = Lamarck(0.1, 0.1, S_MUTPB)
+# WOLFS_LAMARCK = Lamarck(0.1, 0.1, W_MUTPB)
+SHEEP_LAMARCK = None
+WOLFS_LAMARCK = None
 
 common_tbx = base.Toolbox()
 s_toolbox = base.Toolbox()
@@ -170,8 +171,8 @@ def main(checkpoint=None):
         summary.write('\nPlansza:     %dx%d' % (X_MAX, Y_MAX))
         summary.write('\nSymulacja:   %dx%d' % (MAX_GEN, MAX_ITER))
         summary.write('\nPolulacja:   %d trawy, %d owiec, %d wilków' % (GRASS_COUNT, SHEEP_COUNT, WOLFS_COUNT))
-        summary.write('\nEwolucja o: %s' % 'Lamarck' if SHEEP_LAMARCK else 'Darwin')
-        summary.write('\nEwolucja w: %s' % 'Lamarck' if WOLFS_LAMARCK else 'Darwin')
+        summary.write('\nEwolucja o: %s' % ('Lamarck' if SHEEP_LAMARCK else 'Darwin'))
+        summary.write('\nEwolucja w: %s' % ('Lamarck' if WOLFS_LAMARCK else 'Darwin'))
         summary.write('\nEwolucja o:  cx(%f), mut(%f)' % (S_CXPB, S_MUTPB))
         summary.write('\nEwolucja w:  cx(%f), mut(%f)' % (W_CXPB, W_MUTPB))
         summary.write('\nMutacja:     sigma=%d, p(%f)' % (MUT_SIGMA, MUT_PB))

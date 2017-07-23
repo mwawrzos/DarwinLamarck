@@ -61,9 +61,14 @@ class AutonomicAgent(BaseAgent):
         self.energy -= self.decision.cost
         if self.energy < self.max_energy:
             self.eat()
+        self.kill()
 
     @abstractmethod
     def eat(self):
+        pass
+
+    @abstractmethod
+    def kill(self):
         pass
 
 
@@ -84,6 +89,7 @@ class MarkerAgent(BaseAgent):
 class GrassAgent(BaseAgent):
     def __init__(self, space, x, y, lamarck, param):
         super(GrassAgent, self).__init__(space, x, y, r=0.06)
+        self.lamarck = lamarck
         self.param = param
 
     def draw(self):
@@ -119,12 +125,20 @@ class WolfAgent(AutonomicAgent):
             self.energy, sheep.energy = self.energy + 400, 0
             self.eaten += 1
 
+    def kill(self):
+        for sheep in filter(t_matcher(SheepAgent), self.r_neighbors):
+            sheep.energy = 0
+            self.eaten -= 1
+
     def get_params(self):
         d = self.strategy.decisions
         return [d[0].a, d[0].b, d[0].speed_weight, d[1].a, d[1].b]
 
 
 class SheepAgent(AutonomicAgent):
+    def kill(self):
+        pass
+
     def __init__(self, space, x, y, lamarck, param):
         super(SheepAgent, self).__init__(space, x, y, r=0.1)
         self.strategy = self.make_strategy(space, lamarck, param)
