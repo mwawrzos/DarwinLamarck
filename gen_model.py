@@ -14,7 +14,7 @@ class SimulationModel(Model):
 
         self.starved = 0
         self.space = ContinuousSpace(x_max, y_max,
-                                     grid_width=10, grid_height=10,
+                                     grid_width=20, grid_height=20,
                                      torus=True)
         self.schedule = SimultaneousActivation(self)
 

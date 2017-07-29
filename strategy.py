@@ -26,7 +26,7 @@ class Decision(object):
         self.cost = 1 + self.speed_weight / 1000 * 3
 
     def value(self, *args, **kwargs):
-        return self.value_func(*args, **kwargs) * self.a + self.b
+        return max(0, min(1000, self.value_func(*args, **kwargs) * self.a + self.b))
 
     def __call__(self, *args, **kwargs):
         return self.decision(*args, **kwargs)

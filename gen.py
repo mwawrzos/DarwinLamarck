@@ -9,32 +9,34 @@ from deap import base, tools, creator, algorithms
 
 import Boids
 from gen_model import SimulationModel
+from lamarck import Lamarck
 
-X_MAX = 10
-Y_MAX = 10
+X_MAX = 20
+Y_MAX = 20
 
 MAX_ITER = 700
-MAX_GEN = 40
+MAX_GEN = 80
 
 MAX_VALUE = 1000
 
-GRASS_COUNT = 75
-SHEEP_COUNT = 50
-WOLFS_COUNT = 10
+GRASS_COUNT = 400
+SHEEP_COUNT = 200
+WOLFS_COUNT = 40
 
 # S_CXPB, S_MUTPB = 0.5, 0.1
-# W_CXPB, W_MUTPB = 0.5, 0.1
+W_CXPB, W_MUTPB = 0.5, 0.1
 S_CXPB, S_MUTPB = 0, 0
-W_CXPB, W_MUTPB = 0, 0
+# W_CXPB, W_MUTPB = 0, 0
 
 MUT_SIGMA = 10
 MUT_PB = 0.1
-TOUR_SIZE = 3
+W_TOUR_SIZE = 3
+S_TOUR_SIZE = 3
 
-# SHEEP_LAMARCK = Lamarck(0.1, 0.1, S_MUTPB)
-# WOLFS_LAMARCK = Lamarck(0.1, 0.1, W_MUTPB)
-SHEEP_LAMARCK = None
-WOLFS_LAMARCK = None
+SHEEP_LAMARCK = Lamarck(0.1, 0.1, S_MUTPB)
+WOLFS_LAMARCK = Lamarck(0.1, 0.1, W_MUTPB)
+# SHEEP_LAMARCK = None
+# WOLFS_LAMARCK = None
 
 common_tbx = base.Toolbox()
 s_toolbox = base.Toolbox()
@@ -72,16 +74,16 @@ creator.create('Wolf', list, fitness=creator.FitnessMax)
 
 common_tbx.register('random', random.randint, a=0, b=MAX_VALUE)
 common_tbx.register('evaluate', eval_populations)
-common_tbx.register('select', tools.selTournament, tournsize=7)
 common_tbx.register('mate', tools.cxTwoPoint)
 common_tbx.register('mutate', tools.mutGaussian, mu=0, sigma=MUT_SIGMA, indpb=MUT_PB)
-common_tbx.register('select', tools.selTournament, tournsize=TOUR_SIZE)
 
 s_toolbox.register('individual', tools.initRepeat, creator.Sheep, common_tbx.random, n=7)
 s_toolbox.register('population', tools.initRepeat, list, s_toolbox.individual)
+s_toolbox.register('select', tools.selTournament, tournsize=S_TOUR_SIZE)
 
 w_toolbox.register('individual', tools.initRepeat, creator.Wolf, common_tbx.random, n=5)
 w_toolbox.register('population', tools.initRepeat, list, w_toolbox.individual)
+w_toolbox.register('select', tools.selTournament, tournsize=W_TOUR_SIZE)
 
 s_stats = tools.Statistics(lambda pop: foo(pop, 'sheep'))
 w_stats = tools.Statistics(lambda pop: foo(pop, 'wolfs'))
@@ -95,8 +97,8 @@ stats.register('alive', alive)
 
 
 class GenState:
-    def __init__(self, checkpoint):
-        self.directory = os.path.join('cp', str(datetime.now().strftime('%y%b%d%H%M%S')))
+    def __init__(self, checkpoint, directory=None):
+        self.directory = directory if directory else os.path.join('cp', str(datetime.now().strftime('%y%b%d%H%M%S')))
         os.makedirs(self.directory)
         self.sheep, self.wolfs, self.s_hof, self.w_hof, self.logbook = (None,) * 5
         if checkpoint:
@@ -147,8 +149,11 @@ class GenState:
         print(self.logbook.stream)
 
 
-def main(checkpoint=None):
-    state = GenState(checkpoint)
+def main(checkpoint=None, directory=None):
+    state = GenState(checkpoint, directory)
+    with open(os.path.join(state.directory, 'summary.txt'), 'w') as summary:
+        summary.write('Polulacje:   wilki[%d] owce[%d]\n' % (len(set(((v for v in w) for w in state.wolfs))),
+                                                             len(set(((v for v in s) for s in state.sheep)))))
 
     evaluate_population(state.sheep, state.wolfs)
     state.log_population(0)
@@ -166,19 +171,22 @@ def main(checkpoint=None):
         state.log_population(g)
         state.checkpoint(g)
 
-    with open(os.path.join(state.directory, 'summary.txt'), 'w') as summary:
+    with open(os.path.join(state.directory, 'summary.txt'), 'a') as summary:
         summary.write(str(state.logbook))
-        summary.write('\nPlansza:     %dx%d' % (X_MAX, Y_MAX))
-        summary.write('\nSymulacja:   %dx%d' % (MAX_GEN, MAX_ITER))
-        summary.write('\nPolulacja:   %d trawy, %d owiec, %d wilków' % (GRASS_COUNT, SHEEP_COUNT, WOLFS_COUNT))
-        summary.write('\nEwolucja o: %s' % ('Lamarck' if SHEEP_LAMARCK else 'Darwin'))
-        summary.write('\nEwolucja w: %s' % ('Lamarck' if WOLFS_LAMARCK else 'Darwin'))
-        summary.write('\nEwolucja o:  cx(%f), mut(%f)' % (S_CXPB, S_MUTPB))
-        summary.write('\nEwolucja w:  cx(%f), mut(%f)' % (W_CXPB, W_MUTPB))
-        summary.write('\nMutacja:     sigma=%d, p(%f)' % (MUT_SIGMA, MUT_PB))
-        summary.write('\nKrzyżowanie: turniej=%d' % TOUR_SIZE)
-        summary.write('\nLimit rand:  %d' % MAX_VALUE)
-        summary.write('\nWersja:      %s' % get_git_sha())
+        summary.write('\nPolulacje:   wilki[%d] owce[%d]\n' % (len(set(((v for v in w) for w in state.wolfs))),
+                                                               len(set(((v for v in s) for s in state.sheep)))))
+        summary.write('\nPlansza:       %dx%d' % (X_MAX, Y_MAX))
+        summary.write('\nSymulacja:     %dx%d' % (MAX_GEN, MAX_ITER))
+        summary.write('\nPolulacja:     %d trawy, %d owiec, %d wilków' % (GRASS_COUNT, SHEEP_COUNT, WOLFS_COUNT))
+        summary.write('\nEwolucja o:    %s' % ('Lamarck' if SHEEP_LAMARCK else 'Darwin'))
+        summary.write('\nEwolucja w:    %s' % ('Lamarck' if WOLFS_LAMARCK else 'Darwin'))
+        summary.write('\nEwolucja o:    cx(%f), mut(%f)' % (S_CXPB, S_MUTPB))
+        summary.write('\nEwolucja w:    cx(%f), mut(%f)' % (W_CXPB, W_MUTPB))
+        summary.write('\nMutacja:       sigma=%d, p(%f)' % (MUT_SIGMA, MUT_PB))
+        summary.write('\nKrzyżowanie o: turniej=%d' % S_TOUR_SIZE)
+        summary.write('\nKrzyżowanie w: turniej=%d' % W_TOUR_SIZE)
+        summary.write('\nLimit rand:    %d' % MAX_VALUE)
+        summary.write('\nWersja:        %s' % get_git_sha())
     print(state.s_hof)
     print(state.w_hof)
 
