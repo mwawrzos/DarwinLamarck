@@ -23,7 +23,7 @@ class Decision(object):
 
     def update_speed(self):
         self.speed = 0.03 + self.speed_weight / 1000 * 0.03
-        self.cost = 1 + self.speed_weight / 1000 * 3
+        self.cost = 1 + self.speed_weight / 1000 * 2
 
     def value(self, *args, **kwargs):
         return max(0, min(1000, self.value_func(*args, **kwargs) * self.a + self.b))

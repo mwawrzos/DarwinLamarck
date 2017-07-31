@@ -1,3 +1,4 @@
+import itertools
 import os
 from datetime import datetime
 from multiprocessing.pool import Pool
@@ -5,18 +6,23 @@ from multiprocessing.pool import Pool
 from gen import Sim, save_results
 from lamarck import Lamarck
 
+VERBOSE = True
+START = 0
+END = 50
+DATE = None
+
 
 def DUMMY_PARAMS():
     return {
-        'X_MAX': 20,
-        'Y_MAX': 20,
-        'MAX_ITER': 5,
-        'MAX_GEN': 5,
+        'X_MAX': 10,
+        'Y_MAX': 10,
+        'MAX_ITER': 500,
+        'MAX_GEN': 40,
         'GRASS_COUNT': 100,
         'SHEEP_COUNT': 50,
         'WOLFS_COUNT': 10,
-        'S_CXPB': 0.5,
-        'W_CXPB': 0.5,
+        'S_CXPB': 0.25,
+        'W_CXPB': 0.25,
         'S_MUTPB': 0.1,
         'W_MUTPB': 0.1,
         'S_TOUR_SIZE': 3,
@@ -111,7 +117,7 @@ def start_sim(args):
     name = '%s' % (wymysl(params))
     directory = os.path.join('cp', date, name, str(i))
 
-    sim = Sim(False)
+    sim = Sim(VERBOSE)
     for p in params:
         sim.__setattr__(p, params[p])
     print('start > %s' % name)
@@ -137,8 +143,14 @@ simulations = [
 ]
 
 if __name__ == '__main__':
-    _date = str(datetime.now().strftime('%y%b%d%H%M%S'))
+    _date = DATE if DATE else str(datetime.now().strftime('%y%b%d%H%M%S'))
+    _date = itertools.repeat(_date)
+
+    _simulations = simulations * (END - START)
+
+    _input = ((simulation, i, date)
+              for ((i, simulation), date)
+              in zip(enumerate(_simulations, START), _date))
+
     with Pool(3) as _p:
-        for _i in range(3):
-            len1 = len(simulations)
-            fs = _p.map(start_sim, zip(simulations, [_i] * len1, [_date] * len1))
+        _p.map(start_sim, _input)
