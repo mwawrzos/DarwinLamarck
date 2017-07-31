@@ -32,7 +32,7 @@ def pop_s(pop):
 
 
 def pop_w(pop):
-    return pop_stats(pop, 'sheep')
+    return pop_stats(pop, 'wolfs')
 
 
 class GenState:
