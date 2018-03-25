@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 
 from MathUtlis import norm, v_len, vector2d
-from Types import t_matcher
+from functional import t_matcher
 
 
 def match(neighbours):

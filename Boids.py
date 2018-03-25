@@ -5,7 +5,7 @@ import numpy as np
 
 from Flock import Flock, Separate
 from MathUtlis import vector2d
-from Types import t_matcher
+from functional import t_matcher
 from strategy import WeighedRandom, Decision
 
 
@@ -126,7 +126,9 @@ class WolfAgent(AutonomicAgent):
             self.eaten += 1
 
     def kill(self):
-        for sheep in filter(t_matcher(SheepAgent), self.r_neighbors):
+        for sheep in (n for n in self.r_neighbors
+                      if isinstance(n, SheepAgent)
+                      and n.energy != 0):
             sheep.energy = 0
             self.eaten -= 1
 

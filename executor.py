@@ -20,7 +20,7 @@ def DUMMY_PARAMS():
         'MAX_GEN': 40,
         'GRASS_COUNT': 100,
         'SHEEP_COUNT': 50,
-        'WOLFS_COUNT': 10,
+        'WOLFS_COUNT': 20,
         'S_CXPB': 0.25,
         'W_CXPB': 0.25,
         'S_MUTPB': 0.1,
@@ -116,6 +116,7 @@ def start_sim(args):
     params, i, date = args
     name = '%s' % (wymysl(params))
     directory = os.path.join('cp', date, name, str(i))
+    print(os.path.abspath(directory), '!!!!!!!')
 
     sim = Sim(VERBOSE)
     for p in params:
@@ -130,16 +131,16 @@ def start_sim(args):
 
 
 simulations = [
-    no_mutation_no_selection(),
-    no_mutation(),
-    lamarck(),
+    # no_mutation_no_selection(),
+    # no_mutation(),
+    # lamarck(),
     w_darwin(s_darwin()),
-    s_darwin(lamarck()),
-    w_darwin(lamarck()),
-    s_nothing(lamarck()),
-    w_nothing(lamarck()),
-    s_nothing(w_darwin()),
-    w_nothing(s_darwin())
+    # s_darwin(lamarck()),
+    # w_darwin(lamarck()),
+    # s_nothing(lamarck()),
+    # w_nothing(lamarck()),
+    # s_nothing(w_darwin()),
+    # w_nothing(s_darwin())
 ]
 
 if __name__ == '__main__':

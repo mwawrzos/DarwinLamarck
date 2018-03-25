@@ -101,24 +101,29 @@ def get_git_sha():
     return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
 
 
+creator.create('FitnessMax', base.Fitness, weights=(1.0, 0.1))
+creator.create('Sheep', list, fitness=creator.FitnessMax)
+creator.create('Wolf', list, fitness=creator.FitnessMax)
+
+
 class Sim:
     def __init__(self, verbose=True):
         self.v = verbose
-        self.X_MAX = 20
-        self.Y_MAX = 20
+        self.X_MAX = 10
+        self.Y_MAX = 10
 
-        self.MAX_ITER = 700
-        self.MAX_GEN = 80
+        self.MAX_ITER = 500
+        self.MAX_GEN = 40
 
         self.MAX_VALUE = 1000
 
-        self.GRASS_COUNT = 400
-        self.SHEEP_COUNT = 20
-        self.WOLFS_COUNT = 40
+        self.GRASS_COUNT = 100
+        self.SHEEP_COUNT = 50
+        self.WOLFS_COUNT = 20
 
-        # self.S_CXPB, self.S_MUTPB = 0.5, 0.1
-        self.W_CXPB, self.W_MUTPB = 0.5, 0.1
-        self.S_CXPB, self.S_MUTPB = 0, 0
+        self.S_CXPB, self.S_MUTPB = 0.25, 0.1
+        self.W_CXPB, self.W_MUTPB = 0.25, 0.1
+        # self.S_CXPB, self.S_MUTPB = 0, 0
         # self.W_CXPB, self.W_MUTPB = 0, 0
 
         self.MUT_SIGMA = 10
@@ -126,18 +131,14 @@ class Sim:
         self.W_TOUR_SIZE = 3
         self.S_TOUR_SIZE = 3
 
-        self.SHEEP_LAMARCK = Lamarck(0.1, 0.1, self.S_MUTPB)
-        self.WOLFS_LAMARCK = Lamarck(0.1, 0.1, self.W_MUTPB)
-        # self.SHEEP_LAMARCK = None
-        # self.WOLFS_LAMARCK = None
+        # self.SHEEP_LAMARCK = Lamarck(0.1, 0.1, self.S_MUTPB)
+        # self.WOLFS_LAMARCK = Lamarck(0.1, 0.1, self.W_MUTPB)
+        self.SHEEP_LAMARCK = None
+        self.WOLFS_LAMARCK = None
 
         self.common_tbx = base.Toolbox()
         self.s_toolbox = base.Toolbox()
         self.w_toolbox = base.Toolbox()
-
-        creator.create('FitnessMax', base.Fitness, weights=(1.0, 0.1))
-        creator.create('Sheep', list, fitness=creator.FitnessMax)
-        creator.create('Wolf', list, fitness=creator.FitnessMax)
 
         self.common_tbx.register('random', random.randint, a=0, b=self.MAX_VALUE)
         self.common_tbx.register('evaluate', self.eval_populations)
@@ -231,7 +232,6 @@ def save_results(directory, res):
         with open(path, mode='wb') as cp_file:
             pickle.dump(cp, cp_file)
 
-
 if __name__ == '__main__':
     s = Sim()
 
@@ -241,3 +241,14 @@ if __name__ == '__main__':
     os.makedirs(_directory)
     save_results(_directory, _res.cps)
     s.write_summary(_res, _directory)
+
+# path = os.path.join('cp', '17Jul30072615')
+# for case in os.listdir(path)[:1]:
+#     case_dir = os.path.join(path, case)
+#     for x in os.listdir(case_dir)[:1]:
+#         x_dir = os.path.join(case_dir, x)
+#         for gen in [gen for gen
+#                     in os.listdir(x_dir)
+#                     if fnmatch.fnmatch(gen, '*.pkl')][:1]:
+#             gen_dir = os.path.join(x_dir, gen)
+#             s = GenState([], [], gen_dir)

@@ -5,7 +5,7 @@ from mesa.space import ContinuousSpace
 from mesa.time import SimultaneousActivation
 
 from Boids import AutonomicAgent
-from Types import t_matcher
+from functional import t_matcher
 
 
 class SimulationModel(Model):

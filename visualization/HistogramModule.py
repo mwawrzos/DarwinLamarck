@@ -2,7 +2,7 @@ import numpy as np
 from mesa.visualization.ModularVisualization import VisualizationElement
 
 from Boids import SheepAgent
-from Types import t_matcher
+from functional import t_matcher
 
 
 class HistogramModule(VisualizationElement):
