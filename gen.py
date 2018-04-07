@@ -13,7 +13,7 @@ from lamarck import Lamarck
 
 
 def pop_stats(pop, name):
-    return list(map(lambda ind: ind.fitness.values, pop[name]))
+    return [ind.fitness.values for ind in pop[name]]
 
 
 def alive(pop):
